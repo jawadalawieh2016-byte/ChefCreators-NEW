@@ -121,6 +121,7 @@
     max-width:1100px; margin:22px auto 4px; padding:0 24px;
   }
   .chef-feed.feed-hidden{ display:none; }
+  .chef-feed.scroll-only .feed-form{ display:none; }
   .feed-shell{
     border:2px solid var(--ink); border-radius:16px; background:var(--card);
     box-shadow:var(--shadow); padding:16px; overflow:hidden;
@@ -405,6 +406,7 @@
   <div class="admin-toggle">
     <span class="greeting-label" id="greetingLabel"></span>
     <button class="btn feed-jump-btn" id="feedJumpBtn" type="button">Chef Feed</button>
+    <button class="btn feed-jump-btn" id="chefScrollBtn" type="button">Chef Scroll</button>
     <span id="accountPill" class="account-pill free">FREE · 2h/day</span>
   </div>
 </header>
@@ -3969,8 +3971,23 @@ function showToast(msg){
 
 const FOOD_FEED_KEY = 'chefcreators-food-feed';
 const FEED_BLOCKED_WORDS = /\b(follow|subscribe|politics|election|gaming|roblox|fortnite|crypto|betting|dating|phone number|address|fight|hate)\b/i;
-const FEED_MEDIA_LIMIT = 25 * 1024 * 1024;
+const FEED_MEDIA_LIMIT = 20 * 1024 * 1024;
 const FOOD_FEED_DB = 'chefcreators-feed-media';
+const FOOD_FEED_API_URL_KEY = 'chefcreators-api-url';
+const FOOD_FEED_DEFAULT_API_BASE_URL = 'https://YOUR-RENDER-BACKEND.onrender.com';
+
+function foodFeedApiBaseUrl(){
+  return (localStorage.getItem(FOOD_FEED_API_URL_KEY) || FOOD_FEED_DEFAULT_API_BASE_URL).trim().replace(/\/$/,'');
+}
+
+function foodFeedRemoteEnabled(){
+  const url = foodFeedApiBaseUrl();
+  return /^https:\/\/[a-z0-9-]+\.onrender\.com$/i.test(url) && !url.includes('YOUR-RENDER-BACKEND');
+}
+
+function foodFeedApiUrl(path){
+  return foodFeedApiBaseUrl() + path;
+}
 
 function loadFoodPosts(){
   try{ return JSON.parse(localStorage.getItem(FOOD_FEED_KEY) || '[]'); }
@@ -3979,6 +3996,36 @@ function loadFoodPosts(){
 
 function saveFoodPosts(posts){
   localStorage.setItem(FOOD_FEED_KEY, JSON.stringify(posts.slice(0, 60)));
+}
+
+async function loadRemoteFoodPosts(){
+  if(!foodFeedRemoteEnabled()) return null;
+  const res = await fetch(foodFeedApiUrl('/api/feed'));
+  if(!res.ok) throw new Error('Could not load Chef Scroll.');
+  const data = await res.json();
+  return Array.isArray(data.posts) ? data.posts : [];
+}
+
+async function saveRemoteFoodPost(post,media){
+  if(!foodFeedRemoteEnabled()) return null;
+  let userId = localStorage.getItem('chefcreators-user-id') || post.userId || '';
+  if(!userId){
+    userId = 'guest-'+Math.random().toString(36).slice(2,9);
+    localStorage.setItem('chefcreators-user-id', userId);
+  }
+  let userToken = localStorage.getItem('chefcreators-user-token') || '';
+  if(!userToken){
+    userToken = (window.crypto?.randomUUID?.() || ('token-'+Math.random().toString(36).slice(2)+Date.now().toString(36)));
+    localStorage.setItem('chefcreators-user-token', userToken);
+  }
+  const res = await fetch(foodFeedApiUrl('/api/feed'),{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-user-token':userToken},
+    body:JSON.stringify({...post,userId,media})
+  });
+  if(!res.ok) throw new Error('Could not post to Chef Scroll.');
+  const data = await res.json();
+  return data.post || null;
 }
 
 function feedMediaDb(){
@@ -4046,7 +4093,16 @@ function foodPostAllowed(post){
 async function renderFoodFeed(){
   const list = document.getElementById('chefFeedList');
   if(!list) return;
-  const posts = loadFoodPosts();
+  let posts = loadFoodPosts();
+  try{
+    const remotePosts = await loadRemoteFoodPosts();
+    if(remotePosts){
+      posts = remotePosts;
+      saveFoodPosts(remotePosts.map(({media,...post})=>post));
+    }
+  }catch(e){
+    if(foodFeedRemoteEnabled()) showToast('Chef Scroll is showing saved posts until the API wakes up.');
+  }
   if(posts.length === 0){
     list.innerHTML = '<div class="feed-empty">Share the first food you made.</div>';
     return;
@@ -4087,6 +4143,7 @@ async function addFoodPost(){
   const postId = 'food-'+Date.now();
   const post = {
     id:postId,
+    userId:localStorage.getItem('chefcreators-user-id') || '',
     dish:(dishInput?.value || '').trim(),
     style:(styleInput?.value || '').trim(),
     mediaType:media?.type || '',
@@ -4105,24 +4162,36 @@ async function addFoodPost(){
     showToast(e.message || 'Could not save that media.');
     return;
   }
+  try{
+    const remotePost = await saveRemoteFoodPost(post, media);
+    if(remotePost) post.id = remotePost.id || post.id;
+  }catch(e){
+    if(foodFeedRemoteEnabled()) showToast('Saved here, but Chef Scroll could not reach the API yet.');
+  }
   const posts = loadFoodPosts();
   posts.unshift(post);
   saveFoodPosts(posts);
   [dishInput, styleInput, mediaInput, noteInput].forEach(el=>{ if(el) el.value=''; });
   const mediaName = document.getElementById('feedMediaName');
   if(mediaName) mediaName.textContent = 'No file selected';
-  renderFoodFeed();
+  openChefFeed('scroll');
   showToast('Posted to Chef Feed');
+}
+
+function openChefFeed(mode='post'){
+  const section = document.getElementById('chefFeedSection');
+  section?.classList.remove('feed-hidden');
+  section?.classList.toggle('scroll-only', mode === 'scroll');
+  renderFoodFeed();
+  document.getElementById('chefFeedTitle')?.scrollIntoView({behavior:'smooth', block:'start'});
+  if(mode === 'post') setTimeout(()=>document.getElementById('feedDishInput')?.focus(), 450);
 }
 
 function initFoodFeed(){
   renderFoodFeed();
   document.getElementById('feedPostBtn')?.addEventListener('click', addFoodPost);
-  document.getElementById('feedJumpBtn')?.addEventListener('click', ()=>{
-    document.getElementById('chefFeedSection')?.classList.remove('feed-hidden');
-    document.getElementById('chefFeedTitle')?.scrollIntoView({behavior:'smooth', block:'start'});
-    setTimeout(()=>document.getElementById('feedDishInput')?.focus(), 450);
-  });
+  document.getElementById('feedJumpBtn')?.addEventListener('click', ()=>openChefFeed('post'));
+  document.getElementById('chefScrollBtn')?.addEventListener('click', ()=>openChefFeed('scroll'));
   document.getElementById('feedMediaInput')?.addEventListener('change', e=>{
     const file = e.target.files?.[0];
     const name = document.getElementById('feedMediaName');

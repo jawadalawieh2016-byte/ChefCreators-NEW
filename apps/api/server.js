@@ -29,7 +29,7 @@ app.use(cors({
     return callback(new Error('Origin not allowed'));
   }
 }));
-app.use(express.json({ limit: '32kb' }));
+app.use(express.json({ limit: '30mb' }));
 
 function cleanString(value, max = 120) {
   return String(value ?? '').trim().slice(0, max);
@@ -64,6 +64,21 @@ async function initDb() {
     )
   `);
   await pool.query('alter table users add column if not exists user_token text');
+  await pool.query(`
+    create table if not exists feed_posts (
+      id text primary key,
+      user_id text not null default '',
+      user_token text not null default '',
+      chef text not null default 'Chef',
+      dish text not null,
+      style text not null default '',
+      note text not null default '',
+      media_data text,
+      media_type text not null default '',
+      media_name text not null default '',
+      created_at timestamptz not null default now()
+    )
+  `);
 }
 
 function rowToUser(row) {
@@ -81,12 +96,72 @@ function rowToUser(row) {
   };
 }
 
+function rowToFeedPost(row) {
+  return {
+    id: row.id,
+    userId: row.user_id || '',
+    chef: row.chef || 'Chef',
+    dish: row.dish || '',
+    style: row.style || '',
+    note: row.note || '',
+    media: row.media_data ? {
+      data: row.media_data,
+      type: row.media_type || '',
+      name: row.media_name || ''
+    } : null,
+    date: row.created_at ? new Date(row.created_at).toLocaleDateString('en-US') : '',
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now()
+  };
+}
+
 app.get('/', (req, res) => {
   res.json({ ok: true, service: 'ChefCreators API', health: '/health' });
 });
 
 app.get('/health', (req, res) => {
   res.json({ ok: true });
+});
+
+app.get('/api/feed', async (req, res, next) => {
+  try {
+    const result = await pool.query('select * from feed_posts order by created_at desc limit 60');
+    res.json({ posts: result.rows.map(rowToFeedPost) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/feed', async (req, res, next) => {
+  try {
+    const id = cleanString(req.body.id, 80) || `food-${Date.now()}`;
+    const userId = cleanString(req.body.userId, 80);
+    const token = userToken(req);
+    const chef = cleanString(req.body.chef, 80) || 'Chef';
+    const dish = cleanString(req.body.dish, 80);
+    const style = cleanString(req.body.style, 60);
+    const note = cleanString(req.body.note, 180);
+    const media = req.body.media && typeof req.body.media === 'object' ? req.body.media : null;
+    const mediaData = media?.data ? cleanString(media.data, 28 * 1024 * 1024) : null;
+    const mediaType = media?.type ? cleanString(media.type, 80) : '';
+    const mediaName = media?.name ? cleanString(media.name, 120) : '';
+
+    if (!dish) return res.status(400).json({ error: 'Missing dish name' });
+    if (!userId) return res.status(400).json({ error: 'Missing user id' });
+    if (!token) return res.status(400).json({ error: 'Missing user token' });
+    if (mediaData && !mediaData.startsWith('data:image/') && !mediaData.startsWith('data:video/')) {
+      return res.status(400).json({ error: 'Only food photos and videos are allowed' });
+    }
+
+    const result = await pool.query(`
+      insert into feed_posts (id, user_id, user_token, chef, dish, style, note, media_data, media_type, media_name, created_at)
+      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,now())
+      returning *
+    `, [id, userId, token, chef, dish, style, note, mediaData, mediaType, mediaName]);
+
+    res.status(201).json({ post: rowToFeedPost(result.rows[0]) });
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.post('/api/users', async (req, res, next) => {
