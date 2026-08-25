@@ -3,7 +3,7 @@ services:
     name: chefcreators-web
     runtime: static
     rootDir: apps/web
-    buildCommand: mkdir -p dist && cp "../../ChefCreators_Latest_Updated_YouTube (1).html" dist/index.html
+    buildCommand: mkdir -p dist && cp index.html dist/index.html
     staticPublishPath: dist
     routes:
       - type: rewrite
