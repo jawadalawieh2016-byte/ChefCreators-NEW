@@ -5095,7 +5095,6 @@ initFoodFeed();
       if(badWords.test(q)){notifyAdmin(q);input.value='';return;}
       const a=document.createElement('div'); a.className='ai-msg ai'; a.textContent=aiAnswer(q); box.appendChild(a);
       box.scrollTop=box.scrollHeight; input.value='';
-      if(getPlan()!=='pro') addUsage(10);
     }
     btn.addEventListener('click',ask);
     input.addEventListener('keydown',e=>{if(e.key==='Enter')ask()});
@@ -5367,14 +5366,17 @@ initFoodFeed();
   });
 
   // Daily usage tracker: Free accounts get 2 hours (7200 seconds) of active app time.
-  // Track continuously and update the visible plan timer every second.
+  // Track elapsed milliseconds so the display keeps pace even if browser timers drift.
   let lastTick=Date.now();
+  let usageRemainderMs=0;
   function usageTick(){
     const p=getPlan();
     const now=Date.now();
-    const elapsed=now-lastTick;
-    const delta=Math.max(0,Math.min(5,Math.floor(elapsed/1000)));
-    if(delta>0) lastTick += delta*1000;
+    const elapsed=Math.max(0,Math.min(10000,now-lastTick));
+    lastTick=now;
+    usageRemainderMs += elapsed;
+    const delta=Math.floor(usageRemainderMs/1000);
+    if(delta>0) usageRemainderMs -= delta*1000;
     if(p!=='pro' && delta>0) addUsage(delta);
     updatePlanUI();
     if(p!=='pro' && getUsage()>=7200){
@@ -5382,8 +5384,8 @@ initFoodFeed();
       if(status) status.innerHTML='⏰ <strong>Daily Free limit reached.</strong> Upgrade to Pro for unlimited use.';
     }
   }
-  setInterval(usageTick,1000);
-  document.addEventListener('visibilitychange',()=>{ lastTick=Date.now(); });
+  setInterval(usageTick,250);
+  document.addEventListener('visibilitychange',()=>{ lastTick=Date.now(); usageRemainderMs=0; });
 
   // Plan buttons are below the main application script, so bind them here
   // after the DOM contains the actual buttons.
