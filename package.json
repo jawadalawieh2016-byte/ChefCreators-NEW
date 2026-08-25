@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3",
-    "@firebase/rules-unit-testing": "^4.0.1",
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@playwright/test": "^1.46.1",
     "vite": "^5.4.0",
     "vitest": "^2.1.1"
