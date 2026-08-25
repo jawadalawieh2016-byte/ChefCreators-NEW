@@ -530,6 +530,10 @@ const DEFAULT_RECIPES = [
    ingredients:['1/4 cup chia seeds','1 cup milk of choice','1 tbsp maple syrup','1/2 tsp vanilla extract','Fresh fruit for topping'],
    steps:['Whisk chia seeds, milk, maple syrup, and vanilla together in a jar.','Cover and refrigerate overnight, stirring once after 20 minutes.','Top with fresh fruit before serving.'],
    tips:'No cooking needed — great for practicing patience and planning ahead.', needsHeat:false, needsKnife:false},
+  {id:'r25', title:'French Tacos', icon:'🌯', category:'main', cuisine:'French', difficulty:'medium', age:'11+', time:'35 min', servings:'4',
+   ingredients:['4 large flour tortillas','2 cups cooked chicken strips or falafel','2 cups frozen fries, baked','1 cup shredded cheese','1/2 cup cheese sauce','1/2 cup ketchup or mild sauce','1 cup lettuce or corn, optional'],
+   steps:['Bake the fries following the package directions, with an adult helping at the oven.','Warm the cooked chicken strips or falafel in a pan or microwave.','Lay each tortilla flat and add fries, protein, shredded cheese, cheese sauce, and a little ketchup or mild sauce.','Fold the sides in, then roll the tortilla tightly into a rectangle-style wrap.','Toast the wrap in a panini press or dry pan until golden and the cheese melts.','Let it cool for 2 minutes, then cut in half and serve.'],
+   tips:'Use already-cooked chicken or falafel to keep this safer and easier for young chefs.', needsHeat:true, needsKnife:true},
   {id:'sauce1', title:'Spicy Garlic Sauce', icon:'🧄', category:'magic_sauce', cuisine:'ChefCreators', difficulty:'easy', age:'9+', time:'10 min', servings:'1 jar',
    ingredients:['6 garlic cloves, peeled','1/2 cup mayonnaise or yogurt','1 tbsp lemon juice','1 tbsp hot sauce','1 tsp honey','Pinch of salt'],
    steps:['Mash or finely grate the garlic.','Stir garlic, mayonnaise or yogurt, lemon juice, hot sauce, honey, and salt together.','Taste and adjust with more lemon or hot sauce.','Chill 10 minutes before serving.'],
@@ -3904,7 +3908,7 @@ async function loadRecipes(){
         return r;
       });
       const savedTitles = new Set(recipes.map(r => r.title));
-      recipes = recipes.concat(WORLD_RECIPES.filter(r => !savedTitles.has(r.title)));
+      recipes = recipes.concat(DEFAULT_RECIPES.concat(WORLD_RECIPES).filter(r => !savedTitles.has(r.title)));
       await saveRecipes();
     } else {
       recipes = DEFAULT_RECIPES.concat(WORLD_RECIPES);
