@@ -121,6 +121,15 @@
   .grid{
     display:grid; grid-template-columns:repeat(auto-fill, minmax(240px,1fr)); gap:22px;
   }
+  .recipe-group-count{
+    border:2px solid var(--ink); border-radius:999px; padding:3px 9px;
+    background:var(--card); font-size:12px; font-weight:800;
+  }
+  .recipe-inline-group-title{
+    grid-column:1 / -1; margin:8px 0 -6px;
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    font-size:22px; line-height:1.2;
+  }
   .card{
     background:var(--card); border:2px solid var(--ink); border-radius:16px; padding:18px 18px 16px;
     box-shadow:var(--shadow); position:relative; transition:transform .2s ease, box-shadow .2s ease;
@@ -365,6 +374,7 @@
 
 <div class="filters" id="categoryFilters"></div>
 <div class="filters" id="secondaryFilters" style="margin-top:10px;"></div>
+<div class="filters" id="groupFilters" style="margin-top:10px;"></div>
 <div id="ageStatus" class="age-current" style="text-align:center;margin:8px 0 18px;"></div>
 
 <main>
@@ -414,6 +424,14 @@ const CATS = [
   {id:'drink', label:'Drinks', color:'#6B8E23'},
 ];
 const DIFF = {easy:{label:'Easy', spoons:'🥄'}, medium:{label:'Medium', spoons:'🥄🥄'}, hard:{label:'Challenging', spoons:'🥄🥄🥄'}};
+
+const GROUP_OPTIONS = [
+  {id:'category', label:'Category'},
+  {id:'difficulty', label:'Level'},
+  {id:'country', label:'Country'},
+  {id:'time', label:'Time'},
+  {id:'vegan', label:'Vegan'}
+];
 
 const DEFAULT_RECIPES = [
   {id:'r1', title:'Fruit Rainbow Skewers', icon:'🍓', category:'snack', difficulty:'easy', age:'6+', time:'10 min', servings:'4',
@@ -3848,6 +3866,7 @@ let recipes = [];
 let activeCategory = 'all';
 let activeDifficulty = 'all';
 let activeTraditional = false;
+let activeGroupBy = 'category';
 let searchTerm = '';
 let adminMode = false;
 let editingId = null;
@@ -3936,6 +3955,19 @@ function renderFilters(){
     renderGrid();
   };
   secWrap.appendChild(traditionalChip);
+
+  const groupWrap = document.getElementById('groupFilters');
+  groupWrap.innerHTML = '';
+  const groupLabel = document.createElement('span');
+  groupLabel.className = 'chip';
+  groupLabel.textContent = 'Group by';
+  groupLabel.setAttribute('aria-hidden', 'true');
+  groupWrap.appendChild(groupLabel);
+  GROUP_OPTIONS.forEach(option=>{
+    const chip = chipEl(option.id, option.label, activeGroupBy===option.id);
+    chip.onclick = ()=>{ activeGroupBy=option.id; renderFilters(); renderGrid(); };
+    groupWrap.appendChild(chip);
+  });
 }
 
 function chipEl(id,label,active){
@@ -3992,6 +4024,65 @@ function renderAgeStatus(){
   old.textContent = savedKidAge ? `Age ${savedKidAge} • ${savedKidAge <= 9 ? 'Easy recipes' : savedKidAge <= 15 ? 'Easy + medium recipes' : 'All recipes'}` : '';
 }
 
+function recipeMinutes(r){
+  const text = String(r.time || '').toLowerCase();
+  if(text.includes('day')) return 1440;
+  const hours = Number(text.match(/(\d+(?:\.\d+)?)\s*(?:hr|hour)/)?.[1] || 0);
+  const mins = Number(text.match(/(\d+)\s*min/)?.[1] || 0);
+  return Math.round(hours * 60 + mins);
+}
+
+function timeGroupLabel(r){
+  const mins = recipeMinutes(r);
+  if(!mins) return 'Time not listed';
+  if(mins <= 15) return '15 minutes or less';
+  if(mins <= 30) return '16 to 30 minutes';
+  if(mins <= 60) return '31 to 60 minutes';
+  return 'More than 1 hour';
+}
+
+function veganGroupLabel(r){
+  const text = [r.title, ...(r.ingredients || [])].join(' ').toLowerCase();
+  const animalWords = /\b(chicken|beef|lamb|pork|fish|salmon|tuna|shrimp|meat|egg|eggs|milk|butter|cheese|cream|yogurt|honey|gelatin|ghee|mayonnaise|mayo|sour cream)\b/;
+  return animalWords.test(text) ? 'Not vegan' : 'Vegan friendly';
+}
+
+function recipeGroupLabel(r){
+  if(activeGroupBy === 'difficulty') return DIFF[r.difficulty]?.label || 'Other level';
+  if(activeGroupBy === 'country') return r.cuisine || 'World';
+  if(activeGroupBy === 'time') return timeGroupLabel(r);
+  if(activeGroupBy === 'vegan') return veganGroupLabel(r);
+  return catLabel(r.category);
+}
+
+function groupSortValue(label){
+  if(activeGroupBy === 'difficulty'){
+    return {'Easy':1,'Medium':2,'Challenging':3}[label] || 99;
+  }
+  if(activeGroupBy === 'time'){
+    return {'15 minutes or less':1,'16 to 30 minutes':2,'31 to 60 minutes':3,'More than 1 hour':4,'Time not listed':5}[label] || 99;
+  }
+  if(activeGroupBy === 'vegan'){
+    return {'Vegan friendly':1,'Not vegan':2}[label] || 99;
+  }
+  return label;
+}
+
+function groupedRecipes(list){
+  const map = new Map();
+  list.forEach(recipe=>{
+    const label = recipeGroupLabel(recipe);
+    if(!map.has(label)) map.set(label, []);
+    map.get(label).push(recipe);
+  });
+  return Array.from(map.entries()).sort((a,b)=>{
+    const av = groupSortValue(a[0]);
+    const bv = groupSortValue(b[0]);
+    if(typeof av === 'number' || typeof bv === 'number') return Number(av) - Number(bv);
+    return String(av).localeCompare(String(bv));
+  });
+}
+
 function renderGrid(){
   const term = searchTerm.trim().toLowerCase();
   const isPro = localStorage.getItem('chefcreators-plan') === 'pro';
@@ -4003,11 +4094,13 @@ function renderGrid(){
     if(activeCategory!=='all' && r.category!==activeCategory) return false;
     if(activeDifficulty!=='all' && r.difficulty!==activeDifficulty) return false;
     if(activeTraditional && !r.traditional) return false;
-    if(term && !r.title.toLowerCase().includes(term)) return false;
+    const searchable = [r.title, r.cuisine, r.category, r.difficulty, ...(r.ingredients || [])].join(' ').toLowerCase();
+    if(term && !searchable.includes(term)) return false;
     return true;
   });
 
   grid.innerHTML = '';
+  grid.className = 'grid';
   document.getElementById('addRecipeRow').style.display = adminMode ? 'block' : 'none';
 
   if(filtered.length===0){
@@ -4016,7 +4109,16 @@ function renderGrid(){
   }
   emptyState.style.display='none';
 
-  filtered.forEach((r,index)=>{
+  const orderedRecipes = groupedRecipes(filtered).flatMap(([label, group])=>group.map(recipe=>({recipe,label})));
+  let currentGroup = '';
+  orderedRecipes.forEach(({recipe:r,label},index)=>{
+    if(label !== currentGroup){
+      currentGroup = label;
+      const heading = document.createElement('h2');
+      heading.className = 'recipe-inline-group-title';
+      heading.innerHTML = `${escapeHtml(label)} <span class="recipe-group-count">${filtered.filter(item=>recipeGroupLabel(item)===label).length} recipes</span>`;
+      grid.appendChild(heading);
+    }
     const card = document.createElement('div');
     card.className = 'card';
     card.style.setProperty('--card-index', index);
