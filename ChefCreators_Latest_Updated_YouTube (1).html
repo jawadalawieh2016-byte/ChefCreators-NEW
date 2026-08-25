@@ -365,6 +365,7 @@
 .greeting-label{font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;color:var(--ink);margin-right:2px}
 @media(max-width:520px){.age-options{grid-template-columns:1fr}}
 .account-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:2px solid var(--ink);border-radius:999px;background:var(--card);font-size:12px;font-weight:800}.account-pill.pro{background:#FFF0B8;border-color:#F2A900}.account-pill.free{background:#F4F4F4}.upgrade-btn{margin-left:8px}
+.feed-jump-btn{padding:7px 11px;border-radius:999px;font-size:12px;box-shadow:2px 2px 0 var(--ink)}
 </style>
 </head>
 <body>
@@ -394,6 +395,7 @@
   </div>
   <div class="admin-toggle">
     <span class="greeting-label" id="greetingLabel"></span>
+    <button class="btn feed-jump-btn" id="feedJumpBtn" type="button">Chef Feed</button>
     <span id="accountPill" class="account-pill free">FREE · 2h/day</span>
   </div>
 </header>
@@ -4035,6 +4037,10 @@ function addFoodPost(){
 function initFoodFeed(){
   renderFoodFeed();
   document.getElementById('feedPostBtn')?.addEventListener('click', addFoodPost);
+  document.getElementById('feedJumpBtn')?.addEventListener('click', ()=>{
+    document.getElementById('chefFeedTitle')?.scrollIntoView({behavior:'smooth', block:'start'});
+    setTimeout(()=>document.getElementById('feedDishInput')?.focus(), 450);
+  });
   ['feedDishInput','feedStyleInput','feedPhotoInput','feedNoteInput'].forEach(id=>{
     document.getElementById(id)?.addEventListener('keydown', e=>{
       if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)) addFoodPost();
