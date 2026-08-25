@@ -116,6 +116,51 @@
   .chip.active{ background:var(--butter); box-shadow:2px 2px 0 var(--butter-deep); border-color:var(--butter-deep); }
   .filters-divider{ width:2px; background:var(--line); margin:2px 4px; }
 
+  /* ---------- Chef Feed ---------- */
+  .chef-feed{
+    max-width:1100px; margin:22px auto 4px; padding:0 24px;
+  }
+  .feed-shell{
+    border:2px solid var(--ink); border-radius:16px; background:var(--card);
+    box-shadow:var(--shadow); padding:16px; overflow:hidden;
+  }
+  .feed-head{
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .feed-head h2{ margin:0; font-size:24px; line-height:1.15; }
+  .feed-note{ color:var(--ink-soft); font-size:13px; font-weight:800; }
+  .feed-form{
+    display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;
+  }
+  .feed-form input,.feed-form textarea{
+    border:2px solid var(--ink); border-radius:12px; background:#fff; padding:10px 12px;
+    font-family:'Nunito'; font-size:14px; font-weight:700; min-width:0;
+  }
+  .feed-form textarea{ grid-column:1 / -1; resize:vertical; min-height:58px; }
+  .feed-actions{ display:flex; justify-content:flex-end; grid-column:1 / -1; }
+  .feed-list{
+    display:flex; gap:14px; overflow-x:auto; padding:4px 2px 8px; scroll-snap-type:x proximity;
+  }
+  .feed-card{
+    flex:0 0 min(280px,82vw); scroll-snap-align:start;
+    border:2px solid var(--ink); border-radius:14px; background:#fff; overflow:hidden;
+    box-shadow:3px 3px 0 rgba(43,36,32,.18);
+  }
+  .feed-photo{
+    height:130px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,#FFC93C,#E85D3D); color:#2B2420; font-size:42px;
+    background-size:cover; background-position:center;
+  }
+  .feed-body{ padding:12px; display:grid; gap:6px; }
+  .feed-body h3{ margin:0; font-size:17px; line-height:1.2; }
+  .feed-meta{ color:var(--ink-soft); font-size:12px; font-weight:900; }
+  .feed-text{ margin:0; font-size:14px; line-height:1.35; color:var(--ink); }
+  .feed-empty{ color:var(--ink-soft); font-weight:800; padding:12px; }
+  @media (max-width:640px){
+    .feed-form{ grid-template-columns:1fr; }
+  }
+
   /* ---------- Grid ---------- */
   main{ max-width:1100px; margin:0 auto; padding:30px 24px 80px; }
   .grid{
@@ -371,6 +416,25 @@
     <input id="searchInput" type="search" placeholder="Search recipes..." aria-label="Search recipes">
   </div>
 </div>
+
+<section class="chef-feed" aria-labelledby="chefFeedTitle">
+  <div class="feed-shell">
+    <div class="feed-head">
+      <h2 id="chefFeedTitle">Chef Feed</h2>
+      <span class="feed-note">Food-only posts from young chefs</span>
+    </div>
+    <div class="feed-form">
+      <input id="feedDishInput" maxlength="50" placeholder="Food you made" aria-label="Food you made">
+      <input id="feedStyleInput" maxlength="34" placeholder="Country or style" aria-label="Country or style">
+      <input id="feedPhotoInput" maxlength="300" placeholder="Optional food photo URL" aria-label="Optional food photo URL">
+      <textarea id="feedNoteInput" maxlength="140" placeholder="Tell us what tasted good..." aria-label="Food note"></textarea>
+      <div class="feed-actions">
+        <button class="btn primary" id="feedPostBtn">Post food</button>
+      </div>
+    </div>
+    <div class="feed-list" id="chefFeedList" aria-live="polite"></div>
+  </div>
+</section>
 
 <div class="filters" id="categoryFilters"></div>
 <div class="filters" id="secondaryFilters" style="margin-top:10px;"></div>
@@ -3888,6 +3952,96 @@ function showToast(msg){
   setTimeout(()=>toastEl.classList.remove('show'), 2200);
 }
 
+const FOOD_FEED_KEY = 'chefcreators-food-feed';
+const FEED_BLOCKED_WORDS = /\b(follow|subscribe|politics|election|gaming|roblox|fortnite|crypto|betting|dating|phone number|address|fight|hate)\b/i;
+
+function loadFoodPosts(){
+  try{ return JSON.parse(localStorage.getItem(FOOD_FEED_KEY) || '[]'); }
+  catch(e){ return []; }
+}
+
+function saveFoodPosts(posts){
+  localStorage.setItem(FOOD_FEED_KEY, JSON.stringify(posts.slice(0, 60)));
+}
+
+function safePhotoUrl(url){
+  const value = String(url || '').trim();
+  if(!value) return '';
+  try{
+    const parsed = new URL(value);
+    if(!/^https?:$/.test(parsed.protocol)) return '';
+    return parsed.href;
+  }catch(e){
+    return '';
+  }
+}
+
+function foodPostAllowed(post){
+  const text = [post.dish, post.style, post.note].join(' ');
+  return post.dish && !FEED_BLOCKED_WORDS.test(text);
+}
+
+function renderFoodFeed(){
+  const list = document.getElementById('chefFeedList');
+  if(!list) return;
+  const posts = loadFoodPosts();
+  if(posts.length === 0){
+    list.innerHTML = '<div class="feed-empty">Share the first food you made.</div>';
+    return;
+  }
+  list.innerHTML = posts.map(post=>{
+    const photo = safePhotoUrl(post.photo);
+    const photoStyle = photo ? ` style="background-image:url(&quot;${escapeAttr(photo)}&quot;)"` : '';
+    const photoContent = photo ? '' : '🍽️';
+    return `
+      <article class="feed-card">
+        <div class="feed-photo"${photoStyle}>${photoContent}</div>
+        <div class="feed-body">
+          <h3>${escapeHtml(post.dish)}</h3>
+          <div class="feed-meta">${escapeHtml(post.chef || 'Chef')} • ${escapeHtml(post.style || 'Food')} • ${escapeHtml(post.date || '')}</div>
+          <p class="feed-text">${escapeHtml(post.note || 'Made with care.')}</p>
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
+function addFoodPost(){
+  const dishInput = document.getElementById('feedDishInput');
+  const styleInput = document.getElementById('feedStyleInput');
+  const photoInput = document.getElementById('feedPhotoInput');
+  const noteInput = document.getElementById('feedNoteInput');
+  const post = {
+    id:'food-'+Date.now(),
+    dish:(dishInput?.value || '').trim(),
+    style:(styleInput?.value || '').trim(),
+    photo:safePhotoUrl(photoInput?.value || ''),
+    note:(noteInput?.value || '').trim(),
+    chef:(localStorage.getItem('chefcreators-name') || 'Chef').trim(),
+    date:new Date().toLocaleDateString()
+  };
+  if(!foodPostAllowed(post)){
+    showToast('Food posts only: add a dish name and keep it about cooking.');
+    return;
+  }
+  const posts = loadFoodPosts();
+  posts.unshift(post);
+  saveFoodPosts(posts);
+  [dishInput, styleInput, photoInput, noteInput].forEach(el=>{ if(el) el.value=''; });
+  renderFoodFeed();
+  showToast('Posted to Chef Feed');
+}
+
+function initFoodFeed(){
+  renderFoodFeed();
+  document.getElementById('feedPostBtn')?.addEventListener('click', addFoodPost);
+  ['feedDishInput','feedStyleInput','feedPhotoInput','feedNoteInput'].forEach(id=>{
+    document.getElementById(id)?.addEventListener('keydown', e=>{
+      if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)) addFoodPost();
+    });
+  });
+}
+
 async function loadRecipes(){
   try{
     const result = await window.storage.get('chefcreators-recipes', false);
@@ -4615,6 +4769,7 @@ setTimeout(()=>{
 },200);
 applySavedAge();
 loadRecipes();
+initFoodFeed();
 
 /* ===== ChefCreators Plans, AI safety, and Admin user controls ===== */
 (function(){
