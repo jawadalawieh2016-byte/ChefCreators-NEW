@@ -137,6 +137,13 @@
     border:2px solid var(--ink); border-radius:12px; background:#fff; padding:10px 12px;
     font-family:'Nunito'; font-size:14px; font-weight:700; min-width:0;
   }
+  .feed-media-picker{
+    grid-column:1 / -1; border:2px dashed var(--ink); border-radius:12px; background:#fff; padding:11px 12px;
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    font-weight:800; cursor:pointer;
+  }
+  .feed-media-picker input{ display:none; }
+  .feed-media-name{ color:var(--ink-soft); font-size:13px; font-weight:800; }
   .feed-form textarea{ grid-column:1 / -1; resize:vertical; min-height:58px; }
   .feed-actions{ display:flex; justify-content:flex-end; grid-column:1 / -1; }
   .feed-list{
@@ -152,6 +159,7 @@
     background:linear-gradient(135deg,#FFC93C,#E85D3D); color:#2B2420; font-size:42px;
     background-size:cover; background-position:center;
   }
+  .feed-photo video,.feed-photo img{ width:100%; height:100%; object-fit:cover; display:block; }
   .feed-body{ padding:12px; display:grid; gap:6px; }
   .feed-body h3{ margin:0; font-size:17px; line-height:1.2; }
   .feed-meta{ color:var(--ink-soft); font-size:12px; font-weight:900; }
@@ -428,7 +436,11 @@
     <div class="feed-form">
       <input id="feedDishInput" maxlength="50" placeholder="Food you made" aria-label="Food you made">
       <input id="feedStyleInput" maxlength="34" placeholder="Country or style" aria-label="Country or style">
-      <input id="feedPhotoInput" maxlength="300" placeholder="Optional food photo URL" aria-label="Optional food photo URL">
+      <label class="feed-media-picker" for="feedMediaInput">
+        <span>Add photo or video from gallery</span>
+        <span class="feed-media-name" id="feedMediaName">No file selected</span>
+        <input id="feedMediaInput" type="file" accept="image/*,video/*" aria-label="Add photo or video from gallery">
+      </label>
       <textarea id="feedNoteInput" maxlength="140" placeholder="Tell us what tasted good..." aria-label="Food note"></textarea>
       <div class="feed-actions">
         <button class="btn primary" id="feedPostBtn">Post food</button>
@@ -3956,6 +3968,8 @@ function showToast(msg){
 
 const FOOD_FEED_KEY = 'chefcreators-food-feed';
 const FEED_BLOCKED_WORDS = /\b(follow|subscribe|politics|election|gaming|roblox|fortnite|crypto|betting|dating|phone number|address|fight|hate)\b/i;
+const FEED_MEDIA_LIMIT = 25 * 1024 * 1024;
+const FOOD_FEED_DB = 'chefcreators-feed-media';
 
 function loadFoodPosts(){
   try{ return JSON.parse(localStorage.getItem(FOOD_FEED_KEY) || '[]'); }
@@ -3966,16 +3980,61 @@ function saveFoodPosts(posts){
   localStorage.setItem(FOOD_FEED_KEY, JSON.stringify(posts.slice(0, 60)));
 }
 
-function safePhotoUrl(url){
-  const value = String(url || '').trim();
-  if(!value) return '';
-  try{
-    const parsed = new URL(value);
-    if(!/^https?:$/.test(parsed.protocol)) return '';
-    return parsed.href;
-  }catch(e){
-    return '';
-  }
+function feedMediaDb(){
+  return new Promise((resolve,reject)=>{
+    if(!('indexedDB' in window)){
+      reject(new Error('Gallery uploads are not available in this browser.'));
+      return;
+    }
+    const request = indexedDB.open(FOOD_FEED_DB, 1);
+    request.onupgradeneeded = ()=>{
+      request.result.createObjectStore('media');
+    };
+    request.onsuccess = ()=>resolve(request.result);
+    request.onerror = ()=>reject(new Error('Could not open gallery storage.'));
+  });
+}
+
+async function saveFeedMedia(id,media){
+  if(!media) return;
+  const db = await feedMediaDb();
+  await new Promise((resolve,reject)=>{
+    const tx = db.transaction('media','readwrite');
+    tx.objectStore('media').put(media,id);
+    tx.oncomplete = resolve;
+    tx.onerror = ()=>reject(new Error('Could not save that photo or video.'));
+  });
+  db.close();
+}
+
+async function getFeedMedia(id){
+  const db = await feedMediaDb();
+  const media = await new Promise(resolve=>{
+    const tx = db.transaction('media','readonly');
+    const request = tx.objectStore('media').get(id);
+    request.onsuccess = ()=>resolve(request.result || null);
+    request.onerror = ()=>resolve(null);
+  });
+  db.close();
+  return media;
+}
+
+function readFeedMedia(file){
+  return new Promise((resolve,reject)=>{
+    if(!file) return resolve(null);
+    if(!file.type.startsWith('image/') && !file.type.startsWith('video/')){
+      reject(new Error('Choose a food photo or video.'));
+      return;
+    }
+    if(file.size > FEED_MEDIA_LIMIT){
+      reject(new Error('Pick a photo or short video under 25 MB.'));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = ()=>resolve({data:reader.result, type:file.type, name:file.name});
+    reader.onerror = ()=>reject(new Error('Could not read that file.'));
+    reader.readAsDataURL(file);
+  });
 }
 
 function foodPostAllowed(post){
@@ -3983,7 +4042,7 @@ function foodPostAllowed(post){
   return post.dish && !FEED_BLOCKED_WORDS.test(text);
 }
 
-function renderFoodFeed(){
+async function renderFoodFeed(){
   const list = document.getElementById('chefFeedList');
   if(!list) return;
   const posts = loadFoodPosts();
@@ -3991,13 +4050,16 @@ function renderFoodFeed(){
     list.innerHTML = '<div class="feed-empty">Share the first food you made.</div>';
     return;
   }
-  list.innerHTML = posts.map(post=>{
-    const photo = safePhotoUrl(post.photo);
-    const photoStyle = photo ? ` style="background-image:url(&quot;${escapeAttr(photo)}&quot;)"` : '';
-    const photoContent = photo ? '' : '🍽️';
+  const cards = await Promise.all(posts.map(async post=>{
+    const media = post.media || (await getFeedMedia(post.id).catch(()=>null));
+    const mediaHtml = media?.data
+      ? (String(media.type || '').startsWith('video/')
+        ? `<video src="${escapeAttr(media.data)}" controls muted playsinline></video>`
+        : `<img src="${escapeAttr(media.data)}" alt="${escapeAttr(post.dish)}">`)
+      : '🍽️';
     return `
       <article class="feed-card">
-        <div class="feed-photo"${photoStyle}>${photoContent}</div>
+        <div class="feed-photo">${mediaHtml}</div>
         <div class="feed-body">
           <h3>${escapeHtml(post.dish)}</h3>
           <div class="feed-meta">${escapeHtml(post.chef || 'Chef')} • ${escapeHtml(post.style || 'Food')} • ${escapeHtml(post.date || '')}</div>
@@ -4005,19 +4067,29 @@ function renderFoodFeed(){
         </div>
       </article>
     `;
-  }).join('');
+  }));
+  list.innerHTML = cards.join('');
 }
 
-function addFoodPost(){
+async function addFoodPost(){
   const dishInput = document.getElementById('feedDishInput');
   const styleInput = document.getElementById('feedStyleInput');
-  const photoInput = document.getElementById('feedPhotoInput');
+  const mediaInput = document.getElementById('feedMediaInput');
   const noteInput = document.getElementById('feedNoteInput');
+  let media = null;
+  try{
+    media = await readFeedMedia(mediaInput?.files?.[0]);
+  }catch(e){
+    showToast(e.message || 'Could not add that media.');
+    return;
+  }
+  const postId = 'food-'+Date.now();
   const post = {
-    id:'food-'+Date.now(),
+    id:postId,
     dish:(dishInput?.value || '').trim(),
     style:(styleInput?.value || '').trim(),
-    photo:safePhotoUrl(photoInput?.value || ''),
+    mediaType:media?.type || '',
+    mediaName:media?.name || '',
     note:(noteInput?.value || '').trim(),
     chef:(localStorage.getItem('chefcreators-name') || 'Chef').trim(),
     date:new Date().toLocaleDateString()
@@ -4026,10 +4098,18 @@ function addFoodPost(){
     showToast('Food posts only: add a dish name and keep it about cooking.');
     return;
   }
+  try{
+    await saveFeedMedia(postId, media);
+  }catch(e){
+    showToast(e.message || 'Could not save that media.');
+    return;
+  }
   const posts = loadFoodPosts();
   posts.unshift(post);
   saveFoodPosts(posts);
-  [dishInput, styleInput, photoInput, noteInput].forEach(el=>{ if(el) el.value=''; });
+  [dishInput, styleInput, mediaInput, noteInput].forEach(el=>{ if(el) el.value=''; });
+  const mediaName = document.getElementById('feedMediaName');
+  if(mediaName) mediaName.textContent = 'No file selected';
   renderFoodFeed();
   showToast('Posted to Chef Feed');
 }
@@ -4041,7 +4121,12 @@ function initFoodFeed(){
     document.getElementById('chefFeedTitle')?.scrollIntoView({behavior:'smooth', block:'start'});
     setTimeout(()=>document.getElementById('feedDishInput')?.focus(), 450);
   });
-  ['feedDishInput','feedStyleInput','feedPhotoInput','feedNoteInput'].forEach(id=>{
+  document.getElementById('feedMediaInput')?.addEventListener('change', e=>{
+    const file = e.target.files?.[0];
+    const name = document.getElementById('feedMediaName');
+    if(name) name.textContent = file ? file.name : 'No file selected';
+  });
+  ['feedDishInput','feedStyleInput','feedNoteInput'].forEach(id=>{
     document.getElementById(id)?.addEventListener('keydown', e=>{
       if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)) addFoodPost();
     });
