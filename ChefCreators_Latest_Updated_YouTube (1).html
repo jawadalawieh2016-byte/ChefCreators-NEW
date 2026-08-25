@@ -120,6 +120,7 @@
   .chef-feed{
     max-width:1100px; margin:22px auto 4px; padding:0 24px;
   }
+  .chef-feed.feed-hidden{ display:none; }
   .feed-shell{
     border:2px solid var(--ink); border-radius:16px; background:var(--card);
     box-shadow:var(--shadow); padding:16px; overflow:hidden;
@@ -427,7 +428,7 @@
   </div>
 </div>
 
-<section class="chef-feed" aria-labelledby="chefFeedTitle">
+<section class="chef-feed feed-hidden" id="chefFeedSection" aria-labelledby="chefFeedTitle">
   <div class="feed-shell">
     <div class="feed-head">
       <h2 id="chefFeedTitle">Chef Feed</h2>
@@ -4118,6 +4119,7 @@ function initFoodFeed(){
   renderFoodFeed();
   document.getElementById('feedPostBtn')?.addEventListener('click', addFoodPost);
   document.getElementById('feedJumpBtn')?.addEventListener('click', ()=>{
+    document.getElementById('chefFeedSection')?.classList.remove('feed-hidden');
     document.getElementById('chefFeedTitle')?.scrollIntoView({behavior:'smooth', block:'start'});
     setTimeout(()=>document.getElementById('feedDishInput')?.focus(), 450);
   });
