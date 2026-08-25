@@ -58,8 +58,9 @@
   .brand .name span{ color:var(--tomato); }
 
   .admin-toggle{
-    display:flex; align-items:center; gap:10px;
+    display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap;
   }
+  .welcome-actions{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
   .btn{
     border:2px solid var(--ink); background:var(--card); color:var(--ink);
     padding:9px 16px; border-radius:999px; font-weight:700; font-size:14px;
@@ -339,7 +340,8 @@
 
   @media (max-width:560px){
     .form-grid{ grid-template-columns:1fr; }
-    header.top{ padding:12px 16px; }
+    header.top{ padding:12px 16px; align-items:flex-start; flex-wrap:wrap; }
+    .admin-toggle{ justify-content:flex-start; width:100%; gap:8px; }
     .brand .name{ font-size:18px; }
   }
 
@@ -376,6 +378,9 @@
 @media(max-width:520px){.age-options{grid-template-columns:1fr}}
 .account-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:2px solid var(--ink);border-radius:999px;background:var(--card);font-size:12px;font-weight:800}.account-pill.pro{background:#FFF0B8;border-color:#F2A900}.account-pill.free{background:#F4F4F4}.upgrade-btn{margin-left:8px}
 .feed-jump-btn{padding:7px 11px;border-radius:999px;font-size:12px;box-shadow:2px 2px 0 var(--ink)}
+.profile-edit-btn{background:var(--tomato);color:white;border-color:var(--tomato-deep);box-shadow:2px 2px 0 var(--tomato-deep)}
+.profile-status-row{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:8px 0 18px}
+.profile-status-row .age-current{margin:0}
 </style>
 </head>
 <body>
@@ -383,11 +388,12 @@
 <div class="age-gate" id="ageGate" role="dialog" aria-modal="true" aria-labelledby="ageGateTitle">
   <div class="age-gate-card">
     <div style="font-size:46px">👨‍🍳</div>
-    <h2 id="ageGateTitle">How old are you?</h2>
-    <p>We’ll show recipes that match your age and cooking level.</p>
+    <h2 id="ageGateTitle">Your chef profile</h2>
+    <p>We’ll use your name and age to show recipes that match your cooking level.</p>
     <div class="age-options" style="display:block">
-      <label for="kidAge" style="display:block;text-align:left;font-weight:800;margin-bottom:8px">Your age</label>
+      <label for="chefName" style="display:block;text-align:left;font-weight:800;margin-bottom:8px">Your name</label>
       <input id="chefName" type="text" maxlength="40" autocomplete="name" placeholder="What’s your name?" style="width:100%;padding:14px;border:2px solid var(--border,#ddd);border-radius:12px;font-size:18px;box-sizing:border-box;margin-bottom:10px">
+      <label for="kidAge" style="display:block;text-align:left;font-weight:800;margin-bottom:8px">Your age</label>
       <input id="kidAge" type="number" min="5" max="120" inputmode="numeric" placeholder="Enter your age" style="width:100%;padding:14px;border:2px solid var(--border,#ddd);border-radius:12px;font-size:18px;box-sizing:border-box">
       <button class="btn primary" id="saveKidAge" style="width:100%;margin-top:12px">Continue</button>
       <div style="font-size:12px;color:var(--ink-soft);margin-top:10px">New accounts start on the Free plan: half the recipes and 2 hours of use each day.</div>
@@ -404,7 +410,10 @@
     <div class="name">Chef<span>Creators</span></div>
   </div>
   <div class="admin-toggle">
-    <span class="greeting-label" id="greetingLabel"></span>
+    <div class="welcome-actions">
+      <span class="greeting-label" id="greetingLabel"></span>
+      <button class="btn feed-jump-btn profile-edit-btn" id="editProfileBtn" type="button">Change Name &amp; Age</button>
+    </div>
     <button class="btn feed-jump-btn" id="feedJumpBtn" type="button">Chef Feed</button>
     <button class="btn feed-jump-btn" id="chefScrollBtn" type="button">Chef Scroll</button>
     <span id="accountPill" class="account-pill free">FREE · 2h/day</span>
@@ -456,7 +465,10 @@
 <div class="filters" id="categoryFilters"></div>
 <div class="filters" id="secondaryFilters" style="margin-top:10px;"></div>
 <div class="filters" id="groupFilters" style="margin-top:10px;"></div>
-<div id="ageStatus" class="age-current" style="text-align:center;margin:8px 0 18px;"></div>
+<div class="profile-status-row">
+  <div id="ageStatus" class="age-current" style="text-align:center;"></div>
+  <button class="btn feed-jump-btn profile-edit-btn" id="editProfileStatusBtn" type="button">Change Name &amp; Age</button>
+</div>
 
 <main>
   <div id="addRecipeRow" style="display:none; margin-bottom:18px;">
@@ -4303,14 +4315,31 @@ function catLabel(id){ const c = CATS.find(x=>x.id===id); return c?c.label:id; }
 const ageGate = document.getElementById('ageGate');
 const kidAgeInput = document.getElementById('kidAge');
 const saveKidAgeBtn = document.getElementById('saveKidAge');
+const chefNameInput = document.getElementById('chefName');
+const editProfileBtn = document.getElementById('editProfileBtn');
+const editProfileStatusBtn = document.getElementById('editProfileStatusBtn');
 
 function applySavedAge(){
   if(savedKidAge >= 5){ ageGate.classList.add('hidden'); renderAgeStatus(); }
   else ageGate.classList.remove('hidden');
 }
 
+function openProfileEditor(){
+  const title=document.getElementById('ageGateTitle');
+  const current=document.getElementById('ageCurrent');
+  const savedName=localStorage.getItem('chefcreators-name')||'';
+  savedKidAge = Number(localStorage.getItem('chefcreators-age') || savedKidAge || 0);
+  if(title) title.textContent = savedKidAge >= 5 ? 'Change your name and age' : 'Your chef profile';
+  if(saveKidAgeBtn) saveKidAgeBtn.textContent = savedKidAge >= 5 ? 'Save changes' : 'Continue';
+  if(current) current.textContent = savedKidAge >= 5 ? 'Update your name or age, then save.' : '';
+  if(chefNameInput) chefNameInput.value = savedName;
+  if(kidAgeInput) kidAgeInput.value = savedKidAge >= 5 ? String(savedKidAge) : '';
+  ageGate.classList.remove('hidden');
+  setTimeout(()=>chefNameInput?.focus(),0);
+}
+
 function saveKidAge(){
-  const nm=(document.getElementById('chefName')?.value||'').trim();
+  const nm=(chefNameInput?.value||'').trim();
   if(!nm){ alert('Please enter your name.'); return; }
 
   const age = Number(kidAgeInput.value);
@@ -4322,12 +4351,21 @@ function saveKidAge(){
   saveChefName(nm);
   recordChefCreatorUser({name:nm, age, ageGroup:userAgeGroup});
   ageGate.classList.add('hidden');
+  const title=document.getElementById('ageGateTitle');
+  const current=document.getElementById('ageCurrent');
+  if(title) title.textContent = 'Your chef profile';
+  if(saveKidAgeBtn) saveKidAgeBtn.textContent = 'Continue';
+  if(current) current.textContent = '';
   renderAgeStatus();
+  renderFilters();
   renderGrid();
 }
 
 saveKidAgeBtn?.addEventListener('click', saveKidAge);
 kidAgeInput?.addEventListener('keydown', e => { if(e.key === 'Enter') saveKidAge(); });
+chefNameInput?.addEventListener('keydown', e => { if(e.key === 'Enter') saveKidAge(); });
+editProfileBtn?.addEventListener('click', openProfileEditor);
+editProfileStatusBtn?.addEventListener('click', openProfileEditor);
 
 function recipeAllowedForAge(r){
   if(adminMode || !userAgeGroup) return true;
@@ -4791,7 +4829,7 @@ function initAgeGate(){
     gate.classList.add('hidden');
     current.textContent='';
   }else{
-    current.textContent='Choose your age group to continue.';
+    current.textContent='Add your name and age to continue.';
   }
   renderAgeStatus();
 }
@@ -5051,7 +5089,11 @@ initFoodFeed();
 
   // A lightweight local safety filter for the static version. Production should
   // also send every message through a server-side moderation endpoint.
-  const badWords = /\b(f+u+c+k+|s+h+i+t+|b+i+t+c+h+|a+s+s+h+o+l+e|d+a+m+n)\b/i;
+  const badWords = /\b(f+u+c+k+|s+h+i+t+|b+i+t+c+h+|a+s+s+h+o+l+e|d+a+m+n|n+i+g+g+(?:a+|e+r+)?|n+i+g+a+)\b/i;
+  const blockedWordMessage = 'Try anything. Every word passes except inappropriate ones.';
+  function hasInappropriateLanguage(text){
+    return badWords.test(String(text || ''));
+  }
   function notifyAdmin(flag){
     const u=users(), id=currentUser();
     if(!u[id]) u[id]={id,plan:getPlan(),banned:false,createdAt:Date.now(),flags:0};
@@ -5063,7 +5105,7 @@ initFoodFeed();
     if('Notification' in window && Notification.permission==='granted'){
       new Notification('ChefCreators safety alert',{body:`Inappropriate language detected from ${id}.`});
     }
-    alert('That message contains inappropriate language. Please ask a cooking question without swearing.');
+    alert(blockedWordMessage);
   }
 
   function aiAnswer(q){
@@ -5091,8 +5133,12 @@ initFoodFeed();
       const u=ensureUser();
       if(u.banned){syncCurrentUser();return;}
       if(getPlan()!=='pro' && getUsage()>=7200){alert('Your free 2-hour daily limit is reached. Upgrade to Pro for unlimited use.');return;}
+      if(hasInappropriateLanguage(q)){
+        notifyAdmin(q);
+        const a=document.createElement('div'); a.className='ai-msg ai'; a.textContent=blockedWordMessage; box.appendChild(a);
+        box.scrollTop=box.scrollHeight; input.value=''; return;
+      }
       const userDiv=document.createElement('div'); userDiv.className='ai-msg user'; userDiv.textContent=q; box.appendChild(userDiv);
-      if(badWords.test(q)){notifyAdmin(q);input.value='';return;}
       const a=document.createElement('div'); a.className='ai-msg ai'; a.textContent=aiAnswer(q); box.appendChild(a);
       box.scrollTop=box.scrollHeight; input.value='';
     }
