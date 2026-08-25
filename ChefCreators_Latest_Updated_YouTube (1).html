@@ -4047,9 +4047,66 @@ function veganGroupLabel(r){
   return animalWords.test(text) ? 'Not vegan' : 'Vegan friendly';
 }
 
+function cuisineFlag(cuisine){
+  const key = String(cuisine || '').trim().toLowerCase();
+  const flags = {
+    afghan:'🇦🇫',
+    american:'🇺🇸',
+    arabian:'🇸🇦',
+    'arabian gulf':'🇸🇦',
+    argentinian:'🇦🇷',
+    austrian:'🇦🇹',
+    brazilian:'🇧🇷',
+    british:'🇬🇧',
+    canadian:'🇨🇦',
+    chefcreators:'👩‍🍳',
+    chinese:'🇨🇳',
+    dessert:'🍰',
+    egyptian:'🇪🇬',
+    ethiopian:'🇪🇹',
+    french:'🇫🇷',
+    greek:'🇬🇷',
+    hungarian:'🇭🇺',
+    indian:'🇮🇳',
+    italian:'🇮🇹',
+    japanese:'🇯🇵',
+    korean:'🇰🇷',
+    lebanese:'🇱🇧',
+    levantine:'🇱🇧',
+    'latin american':'🌽',
+    mexican:'🇲🇽',
+    'middle eastern':'🧆',
+    moroccan:'🇲🇦',
+    nigerian:'🇳🇬',
+    'north african':'🥘',
+    pakistani:'🇵🇰',
+    palestinian:'🇵🇸',
+    peruvian:'🇵🇪',
+    polish:'🇵🇱',
+    'south african':'🇿🇦',
+    'south asian':'🇮🇳',
+    southeast:'🍜',
+    'southeast asian':'🍜',
+    spanish:'🇪🇸',
+    thai:'🇹🇭',
+    ukrainian:'🇺🇦',
+    venezuelan:'🇻🇪',
+    vietnamese:'🇻🇳',
+    'west african':'🍲',
+    world:'🍽️'
+  };
+  return flags[key] || '';
+}
+
+function countryLabel(cuisine){
+  const name = cuisine || 'World';
+  const flag = cuisineFlag(name);
+  return flag ? `${flag} ${name}` : name;
+}
+
 function recipeGroupLabel(r){
   if(activeGroupBy === 'difficulty') return DIFF[r.difficulty]?.label || 'Other level';
-  if(activeGroupBy === 'country') return r.cuisine || 'World';
+  if(activeGroupBy === 'country') return countryLabel(r.cuisine);
   if(activeGroupBy === 'time') return timeGroupLabel(r);
   if(activeGroupBy === 'vegan') return veganGroupLabel(r);
   return catLabel(r.category);
@@ -4230,7 +4287,7 @@ function openDetail(id){
           <span class="badge">${catLabel(r.category)}</span>
           ${r.traditional ? '<span class="badge traditional-badge">🍽️ Traditional dish</span>' : ''}
           ${r.developerFavorite ? '<span class="badge" style="background:#F2A900;border-color:#8B6B3E">Developer favorite sauce</span>' : ''}
-          ${r.cuisine ? `<span class="badge">🌍 ${escapeHtml(r.cuisine)}</span>` : ''}
+          ${r.cuisine ? `<span class="badge">${escapeHtml(countryLabel(r.cuisine))}</span>` : ''}
           ${ownerTraditionalBadge(r)}
           <span class="badge">${r.time}</span>
           <span class="badge">Serves ${r.servings}</span>
