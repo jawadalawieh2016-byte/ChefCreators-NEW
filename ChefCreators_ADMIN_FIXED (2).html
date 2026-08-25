@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ChefCreators — Admin Panel</title>
+<style>
+
+  :root{
+    --cream:#FFF6E9;
+    --card:#FFFDF7;
+    --butter:#FFC93C;
+    --butter-deep:#F2A900;
+    --tomato:#E85D3D;
+    --tomato-deep:#C8451F;
+    --herb:#3F7A4E;
+    --herb-deep:#2E5C39;
+    --sky:#3E8FA6;
+    --ink:#2B2420;
+    --ink-soft:#6B5D52;
+    --line:#E7DCC9;
+    --shadow: 0 6px 0 rgba(43,36,32,0.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 8% 12%, rgba(255,201,60,0.18), transparent 40%),
+      radial-gradient(circle at 92% 30%, rgba(232,93,61,0.10), transparent 45%),
+      var(--cream);
+    font-family:'Nunito', sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+  }
+  h1,h2,h3,.display{ font-family:'Fredoka', sans-serif; }
+  .mono{ font-family:'Space Mono', monospace; letter-spacing:0.02em; }
+  a{color:inherit;}
+  button{ font-family:inherit; cursor:pointer; }
+  ::selection{ background:var(--butter); }
+
+  /* ---------- Header ---------- */
+  header.top{
+    position:sticky; top:0; z-index:40;
+    background:rgba(255,246,233,0.92);
+    backdrop-filter:blur(6px);
+    border-bottom:2px solid var(--line);
+    padding:14px 24px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand .mark{
+    width:42px;height:42px; border-radius:12px;
+    background:var(--tomato); color:white; display:flex; align-items:center; justify-content:center;
+    font-size:22px; box-shadow:var(--shadow); transform:rotate(-4deg);
+  }
+  .brand .name{ font-size:22px; font-weight:700; }
+  .brand .name span{ color:var(--tomato); }
+
+  .admin-toggle{
+    display:flex; align-items:center; gap:10px;
+  }
+  .btn{
+    border:2px solid var(--ink); background:var(--card); color:var(--ink);
+    padding:9px 16px; border-radius:999px; font-weight:700; font-size:14px;
+    box-shadow:3px 3px 0 var(--ink); transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:hover{ transform:translate(-2px,-2px); box-shadow:5px 5px 0 var(--ink); }
+  .btn:active{ transform:translate(0,0); box-shadow:1px 1px 0 var(--ink); }
+  .btn.primary{ background:var(--tomato); color:white; border-color:var(--tomato-deep); box-shadow:3px 3px 0 var(--tomato-deep); }
+  .btn.primary:hover{ box-shadow:5px 5px 0 var(--tomato-deep); }
+  .btn.admin-on{ background:var(--sky); color:white; border-color:#256777; box-shadow:3px 3px 0 #256777; }
+  .btn.ghost{ background:transparent; box-shadow:none; border-color:transparent; text-decoration:underline; padding:9px 8px; }
+  .btn.small{ padding:6px 10px; font-size:12px; }
+  .btn:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
+    outline:3px solid var(--sky); outline-offset:2px;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    max-width:1100px; margin:0 auto; padding:48px 24px 20px; text-align:center;
+    position:relative;
+  }
+  .hero h1{ font-size:clamp(32px,5vw,52px); margin:0 0 10px; line-height:1.05; }
+  .hero h1 .accent{ color:var(--tomato); }
+  .hero p{ color:var(--ink-soft); font-size:18px; max-width:560px; margin:0 auto 26px; font-weight:600;}
+
+  .pot-wrap{ display:flex; justify-content:center; margin-bottom:8px; }
+  .steam{ animation: rise 3s ease-in-out infinite; transform-origin:bottom; }
+  .steam.d2{ animation-delay:.6s; }
+  .steam.d3{ animation-delay:1.2s; }
+  @keyframes rise{
+    0%{ opacity:0; transform:translateY(0) scaleX(1); }
+    30%{ opacity:.9; }
+    100%{ opacity:0; transform:translateY(-26px) scaleX(1.4); }
+  }
+  @media (prefers-reduced-motion: reduce){ .steam{ animation:none; opacity:.5; } }
+
+  .search-row{
+    display:flex; gap:10px; max-width:520px; margin:0 auto 6px; flex-wrap:wrap; justify-content:center;
+  }
+  .search-row input{
+    flex:1; min-width:220px; padding:12px 16px; border-radius:999px; border:2px solid var(--ink);
+    font-family:'Nunito'; font-size:15px; font-weight:700; background:var(--card);
+  }
+
+  /* ---------- Filter chips ---------- */
+  .filters{
+    max-width:1100px; margin:18px auto 0; padding:0 24px;
+    display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
+  }
+  .chip{
+    border:2px solid var(--ink); background:var(--card); padding:7px 14px; border-radius:999px;
+    font-weight:700; font-size:13px; display:flex; align-items:center; gap:6px;
+  }
+  .chip.active{ background:var(--butter); box-shadow:2px 2px 0 var(--butter-deep); border-color:var(--butter-deep); }
+  .filters-divider{ width:2px; background:var(--line); margin:2px 4px; }
+
+  /* ---------- Grid ---------- */
+  main{ max-width:1100px; margin:0 auto; padding:30px 24px 80px; }
+  .grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(240px,1fr)); gap:22px;
+  }
+  .card{
+    background:var(--card); border:2px solid var(--ink); border-radius:16px; padding:18px 18px 16px;
+    box-shadow:var(--shadow); position:relative; transition:transform .15s ease, box-shadow .15s ease;
+    display:flex; flex-direction:column; gap:8px; cursor:pointer;
+  }
+  .card:hover{ transform:translateY(-4px) rotate(-0.6deg); box-shadow:0 10px 0 rgba(43,36,32,0.08); }
+  .card .hole{
+    position:absolute; top:-9px; left:24px; width:16px; height:16px; border-radius:50%;
+    background:var(--cream); border:2px solid var(--ink);
+  }
+  .card .icon{ font-size:38px; line-height:1; }
+  .card h3{ margin:0; font-size:19px; }
+  .card .meta-row{ display:flex; gap:8px; flex-wrap:wrap; font-size:12px; color:var(--ink-soft); font-weight:700; }
+  .badge{ background:var(--cream); border:1.5px solid var(--line); padding:3px 9px; border-radius:999px; }
+  .spoons{ letter-spacing:2px; }
+  .card .cat-tag{
+    position:absolute; top:14px; right:14px; font-size:11px; font-weight:800; text-transform:uppercase;
+    padding:4px 9px; border-radius:999px; color:white;
+  }
+  .card-actions{ display:flex; gap:6px; margin-top:6px; }
+
+  .empty{
+    text-align:center; padding:60px 20px; color:var(--ink-soft);
+  }
+  .empty .big{ font-size:44px; margin-bottom:10px; }
+
+  /* ---------- Modal ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(43,36,32,0.55); display:none;
+    align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto; z-index:100;
+  }
+  .overlay.show{ display:flex; }
+  .modal{
+    background:var(--card); border:2px solid var(--ink); border-radius:20px; max-width:640px; width:100%;
+    padding:28px; box-shadow:8px 8px 0 var(--ink); position:relative; margin-bottom:40px;
+  }
+  .modal .close{
+    position:absolute; top:16px; right:16px; background:var(--ink); color:var(--cream); border:none;
+    width:32px; height:32px; border-radius:50%; font-size:16px; font-weight:700;
+  }
+  .modal-head{ display:flex; gap:14px; align-items:flex-start; margin-bottom:6px; }
+  .modal-head .icon{ font-size:46px; }
+  .modal h2{ margin:0 0 4px; font-size:26px; }
+  .modal .meta-row{ display:flex; gap:8px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-soft); font-weight:700; margin-bottom:14px; }
+  .safety{
+    background:#FFF1D6; border:2px dashed var(--butter-deep); border-radius:12px; padding:12px 14px;
+    font-size:14px; font-weight:700; margin-bottom:16px; display:flex; gap:10px; align-items:flex-start;
+  }
+  .modal h4{ margin:18px 0 8px; font-size:15px; text-transform:uppercase; letter-spacing:.04em; color:var(--tomato-deep); }
+  .modal ul{ margin:0; padding-left:20px; }
+  .modal li{ margin-bottom:6px; }
+  .steps li{ margin-bottom:12px; padding-left:2px; }
+  .tip-box{ background:#EAF3EC; border:2px solid var(--herb); border-radius:12px; padding:12px 14px; font-size:14px; margin-top:16px; }
+
+  /* ---------- Admin form ---------- */
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .form-grid .full{ grid-column:1 / -1; }
+  label{ font-size:12.5px; font-weight:800; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft); display:block; margin-bottom:4px; }
+  input[type=text], input[type=number], select, textarea{
+    width:100%; padding:9px 11px; border-radius:9px; border:2px solid var(--line); font-family:'Nunito'; font-size:14px; background:#FFFEFB;
+  }
+  textarea{ resize:vertical; min-height:80px; font-family:'Nunito'; }
+  .field{ margin-bottom:12px; }
+  .form-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:16px; }
+  .hint{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+
+  footer{ text-align:center; padding:30px 20px 50px; color:var(--ink-soft); font-size:13px; }
+  footer .mono{ font-size:11px; opacity:.7; }
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); opacity:0;
+    background:var(--ink); color:var(--cream); padding:12px 20px; border-radius:999px; font-weight:700;
+    font-size:14px; z-index:200; transition:all .25s ease; pointer-events:none;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  @media (max-width:560px){
+    .form-grid{ grid-template-columns:1fr; }
+    header.top{ padding:12px 16px; }
+    .brand .name{ font-size:18px; }
+  }
+
+/* ===== Plans / AI / Admin controls ===== */
+.plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin:18px 0}
+.plan-card{border:1px solid var(--border,#ddd);border-radius:18px;padding:22px;background:var(--card,#fff);box-shadow:0 8px 24px rgba(0,0,0,.06)}
+.plan-card.pro{border:2px solid #f2a900}
+.plan-price{font-size:32px;font-weight:800;margin:8px 0}
+.plan-card ul{padding-left:20px;line-height:1.8}
+.plan-badge{display:inline-block;padding:5px 10px;border-radius:999px;background:#f2a900;color:#111;font-weight:800;font-size:12px}
+.ai-box{border:1px solid var(--border,#ddd);border-radius:18px;padding:18px;margin:18px 0;background:var(--card,#fff)}
+.ai-messages{height:260px;overflow:auto;padding:8px;background:rgba(0,0,0,.025);border-radius:12px;margin-bottom:12px}
+.ai-msg{padding:10px 12px;border-radius:12px;margin:7px 0;max-width:90%}
+.ai-msg.user{margin-left:auto;background:#e8f1ff}
+.ai-msg.ai{background:#f2f2f2}
+.ai-row{display:flex;gap:8px}
+.ai-row input{flex:1}
+.admin-tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.admin-tool{border:1px solid var(--border,#ddd);border-radius:14px;padding:15px}
+.user-status{font-size:12px;font-weight:700}
+.status-free{color:#666}.status-pro{color:#a66b00}.status-banned{color:#b00020}
+
+
+
+:root{--bg:#f7f7f4;--card:#fff;--text:#202020;--muted:#6d6d6d;--border:#ddd;--accent:#f2a900}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.admin-wrap{max-width:1100px;margin:0 auto;padding:28px 20px}.admin-top{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;margin-bottom:25px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:0 8px 25px rgba(0,0,0,.06)}
+input{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font:inherit}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:11px 15px}
+.btn{background:#202020;color:#fff}.btn.secondary{background:#eee;color:#222}.btn.danger{background:#b00020;color:#fff}
+.hidden{display:none!important}.login{max-width:420px;margin:12vh auto}.login h1{text-align:center}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}.stat strong{display:block;font-size:28px}.stat span{color:var(--muted);font-size:13px}
+.user-row{display:flex;align-items:center;gap:15px;padding:15px 0;border-bottom:1px solid var(--border)}.user-info{flex:1;min-width:0}.user-id{font-weight:800;overflow-wrap:anywhere}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:800;margin:5px 5px 0 0}.free{background:#eee}.pro{background:#ffe49b}.banned{background:#ffd7dc;color:#900}.safe{background:#dff3e3;color:#176b2b}.flagged{background:#ffd7dc;color:#900}
+.dots{font-size:25px;background:transparent;padding:4px 9px}.menu{position:fixed;z-index:50;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.18);padding:6px;min-width:190px}.menu button{display:block;width:100%;text-align:left;background:transparent}.menu button:hover{background:#f1f1f1}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}.toolbar input{max-width:350px}.notice{padding:12px;border-radius:10px;background:#fff6d6;margin-bottom:15px}
+@media(max-width:750px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+</style>
+</head>
+<body>
+
+<div id="loginView" class="admin-wrap login">
+  <div class="card">
+    <h1>🛡️ ChefCreators Admin</h1>
+    <p style="text-align:center;color:var(--muted)">Enter the admin PIN to continue.</p>
+    <input id="adminPin" type="password" placeholder="Admin PIN" autocomplete="current-password">
+    <button class="btn" id="loginBtn" style="width:100%;margin-top:12px">Open Admin Panel</button>
+    <p id="loginError" style="color:#b00020;text-align:center"></p>
+  </div>
+</div>
+
+<main id="adminView" class="admin-wrap hidden">
+  <div class="admin-top">
+    <div>
+      <h1 style="margin:0">🛡️ Admin Panel</h1>
+      <p style="margin:5px 0;color:var(--muted)">ChefCreators user management</p>
+    </div>
+    <button class="btn secondary" id="logoutBtn">Log out</button>
+  </div>
+
+
+  <div class="stats">
+    <div class="card stat"><strong id="totalUsers">0</strong><span>Total users</span></div>
+    <div class="card stat"><strong id="proUsers">0</strong><span>Pro users</span></div>
+    <div class="card stat"><strong id="bannedUsers">0</strong><span>Banned users</span></div>
+    <div class="card stat"><strong id="flaggedUsers">0</strong><span>Safety reviews</span></div>
+  </div>
+
+  <section class="card">
+    <div class="toolbar">
+      <input id="userSearch" placeholder="Search users...">
+      <button class="btn secondary" id="refreshBtn">Refresh</button>
+    </div>
+    <div class="toolbar" style="margin-top:10px">
+      <input id="adminApiUrl" placeholder="https://your-api-service.onrender.com">
+      <button class="btn secondary" id="adminSaveApiUrlBtn">Save API URL</button>
+    </div>
+    <div id="usersList"></div>
+  </section>
+</main>
+
+<div id="userMenu" class="menu hidden">
+  <button data-action="ban">🚫 Ban user</button>
+  <button data-action="unban">✅ Unban user</button>
+  <button data-action="pro">⭐ Grant free Pro</button>
+  <button data-action="free">↩ Make account Free</button>
+</div>
+
+<script>
+const ADMIN_PIN = 'kafta';
+const USERS_KEY = 'chefcreators-users';
+const SESSION_KEY = 'chefcreators-admin-session';
+const DEFAULT_API_BASE_URL = 'https://YOUR-RENDER-BACKEND.onrender.com';
+const API_URL_KEY = 'chefcreators-api-url';
+
+function getUsers(){
+  try { return JSON.parse(localStorage.getItem(USERS_KEY)||'{}'); }
+  catch(e) { return {}; }
+}
+function saveUsers(u){ localStorage.setItem(USERS_KEY,JSON.stringify(u)); }
+function hasUserProfile(user){
+  const name=String(user?.name||'').trim();
+  const age=Number(user?.age||0);
+  return !!name && Number.isInteger(age) && age >= 5;
+}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function configuredApiBaseUrl(){
+  return (localStorage.getItem(API_URL_KEY) || DEFAULT_API_BASE_URL).trim().replace(/\/$/,'');
+}
+function remoteUsersEnabled(){
+  const url = configuredApiBaseUrl();
+  return /^https:\/\/[a-z0-9-]+\.onrender\.com$/i.test(url) && !url.includes('YOUR-RENDER-BACKEND');
+}
+function apiUrl(path){
+  return configuredApiBaseUrl() + path;
+}
+function adminPin(){
+  return sessionStorage.getItem('chefcreators-admin-pin') || ADMIN_PIN;
+}
+function chefCreatorsUserToken(){
+  let token=localStorage.getItem('chefcreators-user-token');
+  if(!token){
+    token=(window.crypto?.randomUUID?.() || ('token-'+Math.random().toString(36).slice(2)+Date.now().toString(36)));
+    localStorage.setItem('chefcreators-user-token',token);
+  }
+  return token;
+}
+async function saveRemoteUserRecord(user){
+  if(!remoteUsersEnabled() || !user?.id) return;
+  try{
+    await fetch(apiUrl('/api/users'),{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(user)
+    });
+  }catch(e){}
+}
+async function loadRemoteUsers(){
+  if(!remoteUsersEnabled()) return null;
+  try{
+    const res=await fetch(apiUrl('/api/users'),{headers:{'x-admin-pin':adminPin()}});
+    if(!res.ok) return null;
+    const data=await res.json();
+    return data.users || {};
+  }catch(e){return null}
+}
+function repairCurrentUser(){
+  const id=localStorage.getItem('chefcreators-user-id');
+  const name=String(localStorage.getItem('chefcreators-name')||'').trim();
+  const age=Number(localStorage.getItem('chefcreators-age')||0);
+  if(!id && !name) return;
+  if(!name || !Number.isInteger(age) || age < 5) return;
+  const userId=id || ('guest-'+Math.random().toString(36).slice(2,9));
+  if(!id) localStorage.setItem('chefcreators-user-id',userId);
+  const users=getUsers();
+  const existing=users[userId]||{};
+  users[userId]={
+    ...existing,
+    id:userId,
+    userToken:chefCreatorsUserToken(),
+    name:name || existing.name || '',
+    age:Number.isInteger(age)&&age>=5 ? age : existing.age,
+    ageGroup:localStorage.getItem('chefcreators-age-group') || existing.ageGroup || '',
+    plan:existing.plan || localStorage.getItem('chefcreators-plan') || 'free',
+    banned:!!existing.banned,
+    createdAt:existing.createdAt || Date.now(),
+    flags:Number(existing.flags||0)
+  };
+  saveUsers(users);
+  saveRemoteUserRecord(users[userId]);
+}
+function syncSavedProfileIntoUsers(){
+  const name=String(localStorage.getItem('chefcreators-name')||'').trim();
+  const age=Number(localStorage.getItem('chefcreators-age')||0);
+  if(!name || !Number.isInteger(age) || age < 5) return;
+  let id=localStorage.getItem('chefcreators-user-id');
+  if(!id){
+    id='guest-'+Math.random().toString(36).slice(2,9);
+    localStorage.setItem('chefcreators-user-id',id);
+  }
+  const ageGroup=localStorage.getItem('chefcreators-age-group') || (age <= 9 ? 'young' : age <= 15 ? 'teen' : 'adult');
+  const users=getUsers();
+  const existing=users[id]||{};
+  users[id]={
+    ...existing,
+    id,
+    userToken:chefCreatorsUserToken(),
+    name,
+    age,
+    ageGroup,
+    plan:existing.plan || localStorage.getItem('chefcreators-plan') || 'free',
+    banned:!!existing.banned,
+    createdAt:existing.createdAt || Date.now(),
+    flags:Number(existing.flags||0)
+  };
+  saveUsers(users);
+  saveRemoteUserRecord(users[id]);
+}
+
+function openPanel(){
+  document.getElementById('loginView').classList.add('hidden');
+  document.getElementById('adminView').classList.remove('hidden');
+  render();
+}
+function login(){
+  const pin=document.getElementById('adminPin').value;
+  if(pin===ADMIN_PIN){
+    sessionStorage.setItem(SESSION_KEY,'1');
+    sessionStorage.setItem('chefcreators-admin-pin',pin);
+    openPanel();
+  }else{
+    document.getElementById('loginError').textContent='Incorrect admin PIN.';
+  }
+}
+function logout(){
+  sessionStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem('chefcreators-admin-pin');
+  document.getElementById('adminView').classList.add('hidden');
+  document.getElementById('loginView').classList.remove('hidden');
+  document.getElementById('adminPin').value='';
+}
+
+async function render(){
+  repairCurrentUser();
+  syncSavedProfileIntoUsers();
+  const local=getUsers();
+  const remote=await loadRemoteUsers();
+  const merged={...local,...(remote||{})};
+  if(remote && Object.keys(remote).length) saveUsers(merged);
+  const users=Object.values(merged).filter(hasUserProfile);
+  const apiWarning = !remoteUsersEnabled()
+    ? '<p style="color:#b00020;font-weight:800">Shared Render API is not connected yet. Add your Render API URL below to show users from every device. For now this panel can only show users saved in this browser.</p>'
+    : remote===null
+      ? '<p style="color:#b00020;font-weight:800">Shared Render API is configured but could not be reached. Check the API URL, CORS_ORIGIN, and admin PIN.</p>'
+      : '';
+  const q=document.getElementById('userSearch').value.trim().toLowerCase();
+  const filtered=users.filter(u=>{
+    const id=String(u.id||'').toLowerCase();
+    const name=String(u.name||'').toLowerCase();
+    return !q || id.includes(q) || name.includes(q);
+  }).sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0));
+
+  document.getElementById('totalUsers').textContent=users.length;
+  document.getElementById('proUsers').textContent=users.filter(u=>u.plan==='pro').length;
+  document.getElementById('bannedUsers').textContent=users.filter(u=>u.banned).length;
+  document.getElementById('flaggedUsers').textContent=users.filter(u=>(u.flags||0)>0).length;
+
+  const list=document.getElementById('usersList');
+  if(!filtered.length){
+    list.innerHTML=apiWarning+'<p style="color:var(--muted)">No users with a saved name and age found.</p>';
+    return;
+  }
+  list.innerHTML=apiWarning+filtered.map(u=>{
+    const age=Number(u.age||0);
+    const ageText=Number.isInteger(age)&&age>=5 ? `Age ${age}` : 'Age not set';
+    const name=String(u.name||'').trim() || 'Unnamed user';
+    return `<div class="user-row">
+      <div class="user-info">
+        <div style="font-weight:800">${esc(name)}</div>
+        <div class="user-id">${esc(u.id)}</div>
+        <div style="font-size:12px;color:var(--muted)">${esc(ageText)}</div>
+        <span class="badge ${u.plan==='pro'?'pro':'free'}">${u.plan==='pro'?'⭐ PRO':'FREE'}</span>
+        ${u.banned?'<span class="badge banned">🚫 BANNED</span>':''}
+        ${Number(u.flags||0)>0?'<span class="badge banned">Safety review needed</span>':''}
+      </div>
+      <button class="dots" data-user="${esc(u.id)}" aria-label="User actions">⋯</button>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('.dots').forEach(btn=>btn.onclick=(e)=>{
+    e.stopPropagation();
+    const menu=document.getElementById('userMenu');
+    menu.dataset.user=btn.dataset.user;
+    menu.classList.remove('hidden');
+    const r=btn.getBoundingClientRect();
+    menu.style.left=Math.max(8,Math.min(window.innerWidth-205,r.right-195))+'px';
+    menu.style.top=(r.bottom+5)+'px';
+  });
+}
+
+document.getElementById('loginBtn').onclick=login;
+document.getElementById('adminPin').onkeydown=e=>{if(e.key==='Enter')login();};
+document.getElementById('logoutBtn').onclick=logout;
+document.getElementById('refreshBtn').onclick=render;
+document.getElementById('userSearch').oninput=render;
+const adminApiUrlInput=document.getElementById('adminApiUrl');
+if(adminApiUrlInput) adminApiUrlInput.value=remoteUsersEnabled() ? configuredApiBaseUrl() : '';
+document.getElementById('adminSaveApiUrlBtn').onclick=()=>{
+  const url=(adminApiUrlInput?.value||'').trim().replace(/\/$/,'');
+  if(!/^https:\/\/[a-z0-9-]+\.onrender\.com$/i.test(url)){
+    alert('Enter your Render API URL, like https://your-api-service.onrender.com');
+    return;
+  }
+  localStorage.setItem(API_URL_KEY,url);
+  syncSavedProfileIntoUsers();
+  render();
+};
+window.addEventListener('storage',e=>{if(e.key===USERS_KEY) render();});
+
+document.querySelectorAll('#userMenu button').forEach(btn=>btn.onclick=()=>{
+  const id=document.getElementById('userMenu').dataset.user;
+  const action=btn.dataset.action;
+  const users=getUsers();
+  if(!users[id]) return;
+
+  if(action==='ban') users[id].banned=true;
+  if(action==='unban') users[id].banned=false;
+  if(action==='pro') { users[id].plan='pro'; users[id].banned=false; }
+  if(action==='free') {
+    users[id].plan='free';
+    if(id===localStorage.getItem('chefcreators-user-id')) localStorage.setItem('chefcreators-plan','free');
+  }
+
+  saveUsers(users);
+  if(remoteUsersEnabled()){
+    fetch(apiUrl('/api/users/'+encodeURIComponent(id)),{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','x-admin-pin':adminPin()},
+      body:JSON.stringify({banned:users[id].banned,plan:users[id].plan||'free'})
+    }).catch(()=>{});
+  }
+  document.getElementById('userMenu').classList.add('hidden');
+  render();
+});
+document.addEventListener('click',()=>document.getElementById('userMenu').classList.add('hidden'));
+
+if(sessionStorage.getItem(SESSION_KEY)==='1') openPanel();
+</script>
+</body>
+</html>

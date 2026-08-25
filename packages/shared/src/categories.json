@@ -1,0 +1,82 @@
+﻿[
+    {
+        "id":  "breakfast",
+        "label":  "Breakfast",
+        "color":  "#F2A900"
+    },
+    {
+        "id":  "appetizer",
+        "label":  "Appetizers",
+        "color":  "#E85D3D"
+    },
+    {
+        "id":  "soup",
+        "label":  "Soups \u0026 Stews",
+        "color":  "#3F7A4E"
+    },
+    {
+        "id":  "salad",
+        "label":  "Salads",
+        "color":  "#6B8E23"
+    },
+    {
+        "id":  "main",
+        "label":  "Main Dishes",
+        "color":  "#C8451F"
+    },
+    {
+        "id":  "pasta",
+        "label":  "Pasta \u0026 Noodles",
+        "color":  "#B5548C"
+    },
+    {
+        "id":  "rice",
+        "label":  "Rice \u0026 Grains",
+        "color":  "#8B6B3E"
+    },
+    {
+        "id":  "bread",
+        "label":  "Breads \u0026 Flatbreads",
+        "color":  "#D18B2C"
+    },
+    {
+        "id":  "street",
+        "label":  "Street Food",
+        "color":  "#3E8FA6"
+    },
+    {
+        "id":  "side",
+        "label":  "Side Dishes",
+        "color":  "#2E5C39"
+    },
+    {
+        "id":  "dessert",
+        "label":  "Desserts",
+        "color":  "#B5548C"
+    },
+    {
+        "id":  "snack",
+        "label":  "Snacks",
+        "color":  "#3E8FA6"
+    },
+    {
+        "id":  "drink",
+        "label":  "Drinks",
+        "color":  "#6B8E23"
+    },
+    {
+        "label":  "Lunch",
+        "color":  "#3E8FA6",
+        "id":  "lunch"
+    },
+    {
+        "label":  "Dinner",
+        "color":  "#C8451F",
+        "id":  "dinner"
+    },
+    {
+        "id":  "magic_sauce",
+        "label":  "Magic Sauce",
+        "color":  "#7B3FB3"
+    }
+]

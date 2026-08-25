@@ -1,0 +1,50 @@
+{
+  "name": "chefcreators",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "workspaces": [
+    "apps/web",
+    "apps/admin-local",
+    "apps/api",
+    "firebase/functions"
+  ],
+  "scripts": {
+    "extract:legacy": "node scripts/extract-legacy-data.mjs",
+    "dev:web": "vite --config apps/web/vite.config.js --host 0.0.0.0",
+    "dev:admin": "vite --config apps/admin-local/vite.config.js --host 127.0.0.1",
+    "build:web": "npm run extract:legacy && vite build --config apps/web/vite.config.js && npm run verify:public",
+    "build:admin": "vite build --config apps/admin-local/vite.config.js",
+    "verify:recipes": "node scripts/verify-recipe-migration.mjs",
+    "verify:public": "node scripts/verify-public-build.mjs",
+    "seed:emulator": "node scripts/seed-recipes.mjs --emulator",
+    "seed:production": "node scripts/seed-recipes.mjs --production",
+    "set:api-url": "node scripts/set-render-api-url.mjs",
+    "smoke:api": "node scripts/smoke-test-render-api.mjs",
+    "verify:api-url": "node scripts/verify-render-api-url.mjs",
+    "test": "npm run verify:recipes && vitest run",
+    "test:rules": "vitest run tests/firestore-rules.test.js",
+    "emulators": "firebase emulators:start --only auth,firestore,functions",
+    "mobile:sync": "npm run build:web && npx cap sync",
+    "cap:add:android": "npx cap add android",
+    "cap:add:ios": "npx cap add ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/app": "^7.1.0",
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/haptics": "^7.0.2",
+    "@capacitor/ios": "^7.4.3",
+    "@capacitor/local-notifications": "^7.0.2",
+    "@capacitor/share": "^7.0.2",
+    "firebase": "^12.1.0",
+    "lucide": "^0.468.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3",
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "@playwright/test": "^1.46.1",
+    "vite": "^5.4.0",
+    "vitest": "^2.1.1"
+  }
+}

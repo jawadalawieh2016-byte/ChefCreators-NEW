@@ -1,0 +1,14 @@
+{
+  "name": "@chefcreators/functions",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "node -e \"console.log('Functions are plain ESM in src for this scaffold')\""
+  },
+  "dependencies": {
+    "firebase-admin": "^12.5.0",
+    "firebase-functions": "^5.1.1",
+    "stripe": "^16.8.0"
+  }
+}

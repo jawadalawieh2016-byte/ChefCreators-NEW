@@ -1,0 +1,14 @@
+﻿{
+    "easy":  {
+                 "label":  "Easy",
+                 "spoons":  "🥄"
+             },
+    "medium":  {
+                   "label":  "Medium",
+                   "spoons":  "🥄🥄"
+               },
+    "hard":  {
+                 "label":  "Challenging",
+                 "spoons":  "🥄🥄🥄"
+             }
+}
