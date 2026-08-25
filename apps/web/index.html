@@ -4970,7 +4970,8 @@ initFoodFeed();
     }catch(e){return 0}
   }
   function addUsage(sec){
-    localStorage.setItem(USAGE_KEY,JSON.stringify({date:todayKey(),seconds:getUsage()+sec}));
+    const next=Math.min(7200,Math.max(0,Math.round(getUsage()+Number(sec||0))));
+    localStorage.setItem(USAGE_KEY,JSON.stringify({date:todayKey(),seconds:next}));
     updatePlanUI();
   }
   function updatePlanUI(){
@@ -5371,8 +5372,9 @@ initFoodFeed();
   function usageTick(){
     const p=getPlan();
     const now=Date.now();
-    const delta=Math.max(0,Math.min(5,Math.floor((now-lastTick)/1000)));
-    lastTick=now;
+    const elapsed=now-lastTick;
+    const delta=Math.max(0,Math.min(5,Math.floor(elapsed/1000)));
+    if(delta>0) lastTick += delta*1000;
     if(p!=='pro' && delta>0) addUsage(delta);
     updatePlanUI();
     if(p!=='pro' && getUsage()>=7200){
