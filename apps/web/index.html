@@ -117,61 +117,6 @@
   .chip.active{ background:var(--butter); box-shadow:2px 2px 0 var(--butter-deep); border-color:var(--butter-deep); }
   .filters-divider{ width:2px; background:var(--line); margin:2px 4px; }
 
-  /* ---------- Chef Feed ---------- */
-  .chef-feed{
-    max-width:1100px; margin:22px auto 4px; padding:0 24px;
-  }
-  .chef-feed.feed-hidden{ display:none; }
-  .chef-feed.scroll-only .feed-form{ display:none; }
-  .feed-shell{
-    border:2px solid var(--ink); border-radius:16px; background:var(--card);
-    box-shadow:var(--shadow); padding:16px; overflow:hidden;
-  }
-  .feed-head{
-    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
-    margin-bottom:12px;
-  }
-  .feed-head h2{ margin:0; font-size:24px; line-height:1.15; }
-  .feed-note{ color:var(--ink-soft); font-size:13px; font-weight:800; }
-  .feed-form{
-    display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;
-  }
-  .feed-form input,.feed-form textarea{
-    border:2px solid var(--ink); border-radius:12px; background:#fff; padding:10px 12px;
-    font-family:'Nunito'; font-size:14px; font-weight:700; min-width:0;
-  }
-  .feed-media-picker{
-    grid-column:1 / -1; border:2px dashed var(--ink); border-radius:12px; background:#fff; padding:11px 12px;
-    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
-    font-weight:800; cursor:pointer;
-  }
-  .feed-media-picker input{ display:none; }
-  .feed-media-name{ color:var(--ink-soft); font-size:13px; font-weight:800; }
-  .feed-form textarea{ grid-column:1 / -1; resize:vertical; min-height:58px; }
-  .feed-actions{ display:flex; justify-content:flex-end; grid-column:1 / -1; }
-  .feed-list{
-    display:flex; gap:14px; overflow-x:auto; padding:4px 2px 8px; scroll-snap-type:x proximity;
-  }
-  .feed-card{
-    flex:0 0 min(280px,82vw); scroll-snap-align:start;
-    border:2px solid var(--ink); border-radius:14px; background:#fff; overflow:hidden;
-    box-shadow:3px 3px 0 rgba(43,36,32,.18);
-  }
-  .feed-photo{
-    height:130px; display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(135deg,#FFC93C,#E85D3D); color:#2B2420; font-size:42px;
-    background-size:cover; background-position:center;
-  }
-  .feed-photo video,.feed-photo img{ width:100%; height:100%; object-fit:cover; display:block; }
-  .feed-body{ padding:12px; display:grid; gap:6px; }
-  .feed-body h3{ margin:0; font-size:17px; line-height:1.2; }
-  .feed-meta{ color:var(--ink-soft); font-size:12px; font-weight:900; }
-  .feed-text{ margin:0; font-size:14px; line-height:1.35; color:var(--ink); }
-  .feed-empty{ color:var(--ink-soft); font-weight:800; padding:12px; }
-  @media (max-width:640px){
-    .feed-form{ grid-template-columns:1fr; }
-  }
-
   /* ---------- Grid ---------- */
   main{ max-width:1100px; margin:0 auto; padding:30px 24px 80px; }
   .grid{
@@ -377,7 +322,7 @@
 .greeting-label{font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;color:var(--ink);margin-right:2px}
 @media(max-width:520px){.age-options{grid-template-columns:1fr}}
 .account-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:2px solid var(--ink);border-radius:999px;background:var(--card);font-size:12px;font-weight:800}.account-pill.pro{background:#FFF0B8;border-color:#F2A900}.account-pill.free{background:#F4F4F4}.upgrade-btn{margin-left:8px}
-.feed-jump-btn{padding:7px 11px;border-radius:999px;font-size:12px;box-shadow:2px 2px 0 var(--ink)}
+.profile-action-btn{padding:7px 11px;border-radius:999px;font-size:12px;box-shadow:2px 2px 0 var(--ink)}
 .profile-edit-btn{background:var(--tomato);color:white;border-color:var(--tomato-deep);box-shadow:2px 2px 0 var(--tomato-deep)}
 .profile-status-row{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:8px 0 18px}
 .profile-status-row .age-current{margin:0}
@@ -412,10 +357,8 @@
   <div class="admin-toggle">
     <div class="welcome-actions">
       <span class="greeting-label" id="greetingLabel"></span>
-      <button class="btn feed-jump-btn profile-edit-btn" id="editProfileBtn" type="button">Change Name &amp; Age</button>
+      <button class="btn profile-action-btn profile-edit-btn" id="editProfileBtn" type="button">Change Name &amp; Age</button>
     </div>
-    <button class="btn feed-jump-btn" id="feedJumpBtn" type="button">Chef Feed</button>
-    <button class="btn feed-jump-btn" id="chefScrollBtn" type="button">Chef Scroll</button>
     <span id="accountPill" class="account-pill free">FREE · 2h/day</span>
   </div>
 </header>
@@ -439,35 +382,12 @@
   </div>
 </div>
 
-<section class="chef-feed feed-hidden" id="chefFeedSection" aria-labelledby="chefFeedTitle">
-  <div class="feed-shell">
-    <div class="feed-head">
-      <h2 id="chefFeedTitle">Chef Feed</h2>
-      <span class="feed-note">Food-only posts from young chefs</span>
-    </div>
-    <div class="feed-form">
-      <input id="feedDishInput" maxlength="50" placeholder="Food you made" aria-label="Food you made">
-      <input id="feedStyleInput" maxlength="34" placeholder="Country or style" aria-label="Country or style">
-      <label class="feed-media-picker" for="feedMediaInput">
-        <span>Add photo or video from gallery</span>
-        <span class="feed-media-name" id="feedMediaName">No file selected</span>
-        <input id="feedMediaInput" type="file" accept="image/*,video/*" aria-label="Add photo or video from gallery">
-      </label>
-      <textarea id="feedNoteInput" maxlength="140" placeholder="Tell us what tasted good..." aria-label="Food note"></textarea>
-      <div class="feed-actions">
-        <button class="btn primary" id="feedPostBtn">Post food</button>
-      </div>
-    </div>
-    <div class="feed-list" id="chefFeedList" aria-live="polite"></div>
-  </div>
-</section>
-
 <div class="filters" id="categoryFilters"></div>
 <div class="filters" id="secondaryFilters" style="margin-top:10px;"></div>
 <div class="filters" id="groupFilters" style="margin-top:10px;"></div>
 <div class="profile-status-row">
   <div id="ageStatus" class="age-current" style="text-align:center;"></div>
-  <button class="btn feed-jump-btn profile-edit-btn" id="editProfileStatusBtn" type="button">Change Name &amp; Age</button>
+  <button class="btn profile-action-btn profile-edit-btn" id="editProfileStatusBtn" type="button">Change Name &amp; Age</button>
 </div>
 
 <main>
@@ -3981,241 +3901,6 @@ function showToast(msg){
   setTimeout(()=>toastEl.classList.remove('show'), 2200);
 }
 
-const FOOD_FEED_KEY = 'chefcreators-food-feed';
-const FEED_BLOCKED_WORDS = /\b(follow|subscribe|politics|election|gaming|roblox|fortnite|crypto|betting|dating|phone number|address|fight|hate)\b/i;
-const FEED_MEDIA_LIMIT = 20 * 1024 * 1024;
-const FOOD_FEED_DB = 'chefcreators-feed-media';
-const FOOD_FEED_API_URL_KEY = 'chefcreators-api-url';
-const FOOD_FEED_DEFAULT_API_BASE_URL = 'https://YOUR-RENDER-BACKEND.onrender.com';
-
-function foodFeedApiBaseUrl(){
-  return (localStorage.getItem(FOOD_FEED_API_URL_KEY) || FOOD_FEED_DEFAULT_API_BASE_URL).trim().replace(/\/$/,'');
-}
-
-function foodFeedRemoteEnabled(){
-  const url = foodFeedApiBaseUrl();
-  return /^https:\/\/[a-z0-9-]+\.onrender\.com$/i.test(url) && !url.includes('YOUR-RENDER-BACKEND');
-}
-
-function foodFeedApiUrl(path){
-  return foodFeedApiBaseUrl() + path;
-}
-
-function loadFoodPosts(){
-  try{ return JSON.parse(localStorage.getItem(FOOD_FEED_KEY) || '[]'); }
-  catch(e){ return []; }
-}
-
-function saveFoodPosts(posts){
-  localStorage.setItem(FOOD_FEED_KEY, JSON.stringify(posts.slice(0, 60)));
-}
-
-async function loadRemoteFoodPosts(){
-  if(!foodFeedRemoteEnabled()) return null;
-  const res = await fetch(foodFeedApiUrl('/api/feed'));
-  if(!res.ok) throw new Error('Could not load Chef Scroll.');
-  const data = await res.json();
-  return Array.isArray(data.posts) ? data.posts : [];
-}
-
-async function saveRemoteFoodPost(post,media){
-  if(!foodFeedRemoteEnabled()) return null;
-  let userId = localStorage.getItem('chefcreators-user-id') || post.userId || '';
-  if(!userId){
-    userId = 'guest-'+Math.random().toString(36).slice(2,9);
-    localStorage.setItem('chefcreators-user-id', userId);
-  }
-  let userToken = localStorage.getItem('chefcreators-user-token') || '';
-  if(!userToken){
-    userToken = (window.crypto?.randomUUID?.() || ('token-'+Math.random().toString(36).slice(2)+Date.now().toString(36)));
-    localStorage.setItem('chefcreators-user-token', userToken);
-  }
-  const res = await fetch(foodFeedApiUrl('/api/feed'),{
-    method:'POST',
-    headers:{'Content-Type':'application/json','x-user-token':userToken},
-    body:JSON.stringify({...post,userId,media})
-  });
-  if(!res.ok) throw new Error('Could not post to Chef Scroll.');
-  const data = await res.json();
-  return data.post || null;
-}
-
-function feedMediaDb(){
-  return new Promise((resolve,reject)=>{
-    if(!('indexedDB' in window)){
-      reject(new Error('Gallery uploads are not available in this browser.'));
-      return;
-    }
-    const request = indexedDB.open(FOOD_FEED_DB, 1);
-    request.onupgradeneeded = ()=>{
-      request.result.createObjectStore('media');
-    };
-    request.onsuccess = ()=>resolve(request.result);
-    request.onerror = ()=>reject(new Error('Could not open gallery storage.'));
-  });
-}
-
-async function saveFeedMedia(id,media){
-  if(!media) return;
-  const db = await feedMediaDb();
-  await new Promise((resolve,reject)=>{
-    const tx = db.transaction('media','readwrite');
-    tx.objectStore('media').put(media,id);
-    tx.oncomplete = resolve;
-    tx.onerror = ()=>reject(new Error('Could not save that photo or video.'));
-  });
-  db.close();
-}
-
-async function getFeedMedia(id){
-  const db = await feedMediaDb();
-  const media = await new Promise(resolve=>{
-    const tx = db.transaction('media','readonly');
-    const request = tx.objectStore('media').get(id);
-    request.onsuccess = ()=>resolve(request.result || null);
-    request.onerror = ()=>resolve(null);
-  });
-  db.close();
-  return media;
-}
-
-function readFeedMedia(file){
-  return new Promise((resolve,reject)=>{
-    if(!file) return resolve(null);
-    if(!file.type.startsWith('image/') && !file.type.startsWith('video/')){
-      reject(new Error('Choose a food photo or video.'));
-      return;
-    }
-    if(file.size > FEED_MEDIA_LIMIT){
-      reject(new Error('Pick a photo or short video under 25 MB.'));
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = ()=>resolve({data:reader.result, type:file.type, name:file.name});
-    reader.onerror = ()=>reject(new Error('Could not read that file.'));
-    reader.readAsDataURL(file);
-  });
-}
-
-function foodPostAllowed(post){
-  const text = [post.dish, post.style, post.note].join(' ');
-  return post.dish && !FEED_BLOCKED_WORDS.test(text);
-}
-
-async function renderFoodFeed(){
-  const list = document.getElementById('chefFeedList');
-  if(!list) return;
-  let posts = loadFoodPosts();
-  try{
-    const remotePosts = await loadRemoteFoodPosts();
-    if(remotePosts){
-      posts = remotePosts;
-      saveFoodPosts(remotePosts.map(({media,...post})=>post));
-    }
-  }catch(e){
-    if(foodFeedRemoteEnabled()) showToast('Chef Scroll is showing saved posts until the API wakes up.');
-  }
-  if(posts.length === 0){
-    list.innerHTML = '<div class="feed-empty">Share the first food you made.</div>';
-    return;
-  }
-  const cards = await Promise.all(posts.map(async post=>{
-    const media = post.media || (await getFeedMedia(post.id).catch(()=>null));
-    const mediaHtml = media?.data
-      ? (String(media.type || '').startsWith('video/')
-        ? `<video src="${escapeAttr(media.data)}" controls muted playsinline></video>`
-        : `<img src="${escapeAttr(media.data)}" alt="${escapeAttr(post.dish)}">`)
-      : '🍽️';
-    return `
-      <article class="feed-card">
-        <div class="feed-photo">${mediaHtml}</div>
-        <div class="feed-body">
-          <h3>${escapeHtml(post.dish)}</h3>
-          <div class="feed-meta">${escapeHtml(post.chef || 'Chef')} • ${escapeHtml(post.style || 'Food')} • ${escapeHtml(post.date || '')}</div>
-          <p class="feed-text">${escapeHtml(post.note || 'Made with care.')}</p>
-        </div>
-      </article>
-    `;
-  }));
-  list.innerHTML = cards.join('');
-}
-
-async function addFoodPost(){
-  const dishInput = document.getElementById('feedDishInput');
-  const styleInput = document.getElementById('feedStyleInput');
-  const mediaInput = document.getElementById('feedMediaInput');
-  const noteInput = document.getElementById('feedNoteInput');
-  let media = null;
-  try{
-    media = await readFeedMedia(mediaInput?.files?.[0]);
-  }catch(e){
-    showToast(e.message || 'Could not add that media.');
-    return;
-  }
-  const postId = 'food-'+Date.now();
-  const post = {
-    id:postId,
-    userId:localStorage.getItem('chefcreators-user-id') || '',
-    dish:(dishInput?.value || '').trim(),
-    style:(styleInput?.value || '').trim(),
-    mediaType:media?.type || '',
-    mediaName:media?.name || '',
-    note:(noteInput?.value || '').trim(),
-    chef:(localStorage.getItem('chefcreators-name') || 'Chef').trim(),
-    date:new Date().toLocaleDateString()
-  };
-  if(!foodPostAllowed(post)){
-    showToast('Food posts only: add a dish name and keep it about cooking.');
-    return;
-  }
-  try{
-    await saveFeedMedia(postId, media);
-  }catch(e){
-    showToast(e.message || 'Could not save that media.');
-    return;
-  }
-  try{
-    const remotePost = await saveRemoteFoodPost(post, media);
-    if(remotePost) post.id = remotePost.id || post.id;
-  }catch(e){
-    if(foodFeedRemoteEnabled()) showToast('Saved here, but Chef Scroll could not reach the API yet.');
-  }
-  const posts = loadFoodPosts();
-  posts.unshift(post);
-  saveFoodPosts(posts);
-  [dishInput, styleInput, mediaInput, noteInput].forEach(el=>{ if(el) el.value=''; });
-  const mediaName = document.getElementById('feedMediaName');
-  if(mediaName) mediaName.textContent = 'No file selected';
-  openChefFeed('scroll');
-  showToast('Posted to Chef Feed');
-}
-
-function openChefFeed(mode='post'){
-  const section = document.getElementById('chefFeedSection');
-  section?.classList.remove('feed-hidden');
-  section?.classList.toggle('scroll-only', mode === 'scroll');
-  renderFoodFeed();
-  document.getElementById('chefFeedTitle')?.scrollIntoView({behavior:'smooth', block:'start'});
-  if(mode === 'post') setTimeout(()=>document.getElementById('feedDishInput')?.focus(), 450);
-}
-
-function initFoodFeed(){
-  renderFoodFeed();
-  document.getElementById('feedPostBtn')?.addEventListener('click', addFoodPost);
-  document.getElementById('feedJumpBtn')?.addEventListener('click', ()=>openChefFeed('post'));
-  document.getElementById('chefScrollBtn')?.addEventListener('click', ()=>openChefFeed('scroll'));
-  document.getElementById('feedMediaInput')?.addEventListener('change', e=>{
-    const file = e.target.files?.[0];
-    const name = document.getElementById('feedMediaName');
-    if(name) name.textContent = file ? file.name : 'No file selected';
-  });
-  ['feedDishInput','feedStyleInput','feedNoteInput'].forEach(id=>{
-    document.getElementById(id)?.addEventListener('keydown', e=>{
-      if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)) addFoodPost();
-    });
-  });
-}
-
 async function loadRecipes(){
   try{
     const result = await window.storage.get('chefcreators-recipes', false);
@@ -4969,7 +4654,6 @@ setTimeout(()=>{
 },200);
 applySavedAge();
 loadRecipes();
-initFoodFeed();
 
 /* ===== ChefCreators Plans, AI safety, and Admin user controls ===== */
 (function(){
