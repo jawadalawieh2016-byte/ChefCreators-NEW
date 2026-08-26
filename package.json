@@ -13,6 +13,7 @@
     "extract:legacy": "node scripts/extract-legacy-data.mjs",
     "dev:web": "vite --config apps/web/vite.config.js --host 0.0.0.0",
     "dev:admin": "vite --config apps/admin-local/vite.config.js --host 127.0.0.1",
+    "build": "npm run build:web",
     "build:web": "npm run extract:legacy && vite build --config apps/web/vite.config.js && npm run verify:public",
     "build:admin": "vite build --config apps/admin-local/vite.config.js",
     "verify:recipes": "node scripts/verify-recipe-migration.mjs",
