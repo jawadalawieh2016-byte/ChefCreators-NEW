@@ -2,9 +2,8 @@ services:
   - type: web
     name: chefcreators-web
     runtime: static
-    rootDir: apps/web
-    buildCommand: mkdir -p dist && cp index.html dist/index.html
-    staticPublishPath: dist
+    buildCommand: npm run build:web
+    staticPublishPath: apps/web/dist
     routes:
       - type: rewrite
         source: /*
